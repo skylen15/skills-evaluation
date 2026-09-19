@@ -1,5 +1,6 @@
 import { GlideRecord, gs } from "@servicenow/glide";
 
+import { err, ok, type Result } from "./prelude.ts";
 import {
   levelForScore,
   parseLevelId,
@@ -15,7 +16,35 @@ const LEVEL_TABLE = "x_711398_se_level";
 
 const SUBMISSION_TABLE = "x_711398_se_submission";
 
-const MAX_ROWS = 500;
+const QUERY_BATCH_SIZE = 200;
+
+const LOG_SOURCE = "[Skill Evaluation]";
+
+type ScoreRecalculationError = InvalidStoredScoreData | SubmissionNotFound;
+
+class InvalidStoredScoreData extends Error {
+  readonly _tag = "InvalidStoredScoreData";
+
+  readonly detail: string;
+
+  constructor(detail: string) {
+    super(detail);
+    this.name = "InvalidStoredScoreData";
+    this.detail = detail;
+  }
+}
+
+class SubmissionNotFound extends Error {
+  readonly _tag = "SubmissionNotFound";
+
+  readonly submissionId: string;
+
+  constructor(submissionId: string) {
+    super(`Submission ${submissionId} was not found`);
+    this.name = "SubmissionNotFound";
+    this.submissionId = submissionId;
+  }
+}
 
 /**
  * Recalculate Score and Level on the parent Submission when Skill Assessments change.
@@ -29,33 +58,38 @@ const MAX_ROWS = 500;
  * @param _previous - Unused; Score is always recomputed from every remaining sibling row.
  */
 export function recalculateSubmissionScore(current: GlideRecord, _previous: GlideRecord): void {
-  applySubmissionScoreAndLevel(current.getValue("submission"));
+  const result = applySubmissionScoreAndLevel(current.getValue("submission"));
+
+  if (result._tag === "err" && result.error._tag === "InvalidStoredScoreData") {
+    gs.warn("{0} Skipping Score update: {1}", LOG_SOURCE, result.error.message);
+  }
 }
 
 /**
  * Write Score and Level on a Submission from its current Skill Assessments.
  *
  * @param submissionId - Parent Submission sys id.
+ * @returns Success after updating, or the expected reason recalculation could not run.
  */
-export function applySubmissionScoreAndLevel(submissionId: string): void {
+function applySubmissionScoreAndLevel(submissionId: string): Result<void, ScoreRecalculationError> {
   const assessments = loadAssessments(submissionId);
 
-  if (assessments === undefined) {
-    return;
+  if (assessments._tag === "err") {
+    return assessments;
   }
 
   const thresholds = loadLevelThresholds();
 
-  if (thresholds === undefined) {
-    return;
+  if (thresholds._tag === "err") {
+    return thresholds;
   }
 
-  const score = scoreFromAssessments(assessments);
-  const levelId = levelForScore(score, thresholds);
+  const score = scoreFromAssessments(assessments.value);
+  const levelId = levelForScore(score, thresholds.value);
   const grSubmission = new GlideRecord(SUBMISSION_TABLE);
 
   if (!grSubmission.get(submissionId)) {
-    return;
+    return err(new SubmissionNotFound(submissionId));
   }
 
   grSubmission.setValue("score", String(score));
@@ -68,6 +102,8 @@ export function applySubmissionScoreAndLevel(submissionId: string): void {
 
   grSubmission.setWorkflow(false);
   grSubmission.update();
+
+  return ok(undefined);
 }
 
 /**
@@ -77,32 +113,53 @@ export function applySubmissionScoreAndLevel(submissionId: string): void {
  * only the row that triggered this Business Rule.
  *
  * @param submissionId - Parent Submission sys id.
- * @returns Snapshots, or undefined when a stored Proficiency Level cannot be parsed.
+ * @returns Snapshots, or an error when a stored Proficiency Level cannot be parsed.
  */
-function loadAssessments(submissionId: string): ReadonlyArray<SkillAssessmentSnapshot> | undefined {
-  const grAssessment = new GlideRecord(SKILL_ASSESSMENT_TABLE);
-  grAssessment.addQuery("submission", submissionId);
-  grAssessment.setLimit(MAX_ROWS);
-  grAssessment.query();
-
+function loadAssessments(
+  submissionId: string,
+): Result<ReadonlyArray<SkillAssessmentSnapshot>, InvalidStoredScoreData> {
   const assessments: SkillAssessmentSnapshot[] = [];
+  let lastId = "";
+  let hasMore = true;
 
-  while (grAssessment.next()) {
-    const proficiency = parseProficiencyLevel(grAssessment.getValue("proficiency_level"));
+  while (hasMore) {
+    const grAssessment = new GlideRecord(SKILL_ASSESSMENT_TABLE);
+    grAssessment.addQuery("submission", submissionId);
 
-    if (proficiency._tag === "err") {
-      gs.warn("Skipping Score update: unknown Proficiency Level {0}", proficiency.error.raw);
-
-      return undefined;
+    if (lastId !== "") {
+      grAssessment.addQuery("sys_id", ">", lastId);
     }
 
-    assessments.push({
-      proficiency: proficiency.value,
-      skillWeight: 0,
-    });
+    grAssessment.orderBy("sys_id");
+    grAssessment.setLimit(QUERY_BATCH_SIZE);
+    grAssessment.query();
+
+    let rowsRead = 0;
+
+    while (grAssessment.next()) {
+      rowsRead += 1;
+      lastId = grAssessment.getUniqueValue();
+
+      const proficiency = parseProficiencyLevel(grAssessment.getValue("proficiency_level"));
+
+      if (proficiency._tag === "err") {
+        return err(
+          new InvalidStoredScoreData(
+            `unknown Proficiency Level ${proficiency.error.raw} on Skill Assessment ${lastId}`,
+          ),
+        );
+      }
+
+      assessments.push({
+        proficiency: proficiency.value,
+        skillWeight: 0,
+      });
+    }
+
+    hasMore = rowsRead === QUERY_BATCH_SIZE;
   }
 
-  return assessments;
+  return ok(assessments);
 }
 
 /**
@@ -111,37 +168,53 @@ function loadAssessments(submissionId: string): ReadonlyArray<SkillAssessmentSna
  * GlideRecord is required because Level rows live on the Level table and are
  * maintained by se_admin rather than hardcoded in this adapter.
  *
- * @returns Snapshots, or undefined when a Level row cannot be parsed.
+ * @returns Snapshots, or an error when a Level row cannot be parsed.
  */
-function loadLevelThresholds(): ReadonlyArray<LevelThresholdSnapshot> | undefined {
-  const grLevel = new GlideRecord(LEVEL_TABLE);
-  grLevel.setLimit(MAX_ROWS);
-  grLevel.query();
-
+function loadLevelThresholds(): Result<
+  ReadonlyArray<LevelThresholdSnapshot>,
+  InvalidStoredScoreData
+> {
   const thresholds: LevelThresholdSnapshot[] = [];
+  let lastId = "";
+  let hasMore = true;
 
-  while (grLevel.next()) {
-    const id = parseLevelId(grLevel.getUniqueValue());
+  while (hasMore) {
+    const grLevel = new GlideRecord(LEVEL_TABLE);
 
-    if (id._tag === "err") {
-      gs.warn("Skipping Score update: Level row has an empty sys id");
-
-      return undefined;
+    if (lastId !== "") {
+      grLevel.addQuery("sys_id", ">", lastId);
     }
 
-    const minScore = Number.parseInt(grLevel.getValue("min_score"), 10);
+    grLevel.orderBy("sys_id");
+    grLevel.setLimit(QUERY_BATCH_SIZE);
+    grLevel.query();
 
-    if (Number.isNaN(minScore)) {
-      gs.warn("Skipping Score update: Level {0} has a non-numeric min score", id.value);
+    let rowsRead = 0;
 
-      return undefined;
+    while (grLevel.next()) {
+      rowsRead += 1;
+      lastId = grLevel.getUniqueValue();
+
+      const id = parseLevelId(lastId);
+
+      if (id._tag === "err") {
+        return err(new InvalidStoredScoreData("Level row has an empty sys id"));
+      }
+
+      const minScore = Number.parseInt(grLevel.getValue("min_score"), 10);
+
+      if (Number.isNaN(minScore)) {
+        return err(new InvalidStoredScoreData(`Level ${id.value} has a non-numeric min score`));
+      }
+
+      thresholds.push({
+        id: id.value,
+        minScore,
+      });
     }
 
-    thresholds.push({
-      id: id.value,
-      minScore,
-    });
+    hasMore = rowsRead === QUERY_BATCH_SIZE;
   }
 
-  return thresholds;
+  return ok(thresholds);
 }

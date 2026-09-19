@@ -1,6 +1,6 @@
 import { ApplicationMenu, Record } from "@servicenow/sdk/core";
 
-import { seUser } from "./roles.now.ts";
+import { SE_USER_ROLE_NAME, seUser } from "./roles.now.ts";
 
 export const skillEvaluationMenu = ApplicationMenu({
   $id: Now.ID["skill-evaluation-menu"],
@@ -20,7 +20,7 @@ Record({
     link_type: "NEW",
     name: "x_711398_se_submission",
     hint: "Start a Draft Submission assigned to you",
-    roles: "x_711398_se.se_user",
+    roles: [SE_USER_ROLE_NAME],
     active: true,
     order: 100,
   },
@@ -36,7 +36,7 @@ Record({
     name: "x_711398_se_submission",
     filter: "assigned_to=javascript:gs.getUserID()",
     hint: "Submissions assigned to you",
-    roles: "x_711398_se.se_user",
+    roles: [SE_USER_ROLE_NAME],
     active: true,
     order: 200,
   },

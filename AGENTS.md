@@ -14,4 +14,4 @@ Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/age
 
 ### Verify
 
-Verify before calling work done: format, then lint, then test. See `docs/agents/verify.md`.
+Verify before calling work done: format, then lint, then test, then build. See `docs/agents/verify.md`.

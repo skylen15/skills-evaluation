@@ -163,9 +163,7 @@ export type SkillAssessmentSnapshot = {
   /** Claimed Proficiency Level for one Skill. */
   readonly proficiency: ProficiencyLevel;
 
-  /**
-   * Weight stored on the Skill. Score policy ignores this value.
-   */
+  /** Policy-only input retained to prove Score ignores Weight; adapters need not load it. */
   readonly skillWeight: number;
 };
 

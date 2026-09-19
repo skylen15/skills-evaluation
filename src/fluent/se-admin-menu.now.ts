@@ -1,5 +1,6 @@
 import { Record } from "@servicenow/sdk/core";
 
+import { SE_ADMIN_ROLE_NAME } from "./roles.now.ts";
 import { skillEvaluationMenu } from "./submission-menu.now.ts";
 
 Record({
@@ -9,7 +10,7 @@ Record({
     title: "SE Admin",
     application: skillEvaluationMenu,
     link_type: "SEPARATOR",
-    roles: "x_711398_se.se_admin",
+    roles: [SE_ADMIN_ROLE_NAME],
     active: true,
     order: 300,
   },
@@ -24,7 +25,7 @@ Record({
     link_type: "LIST",
     name: "x_711398_se_product_line",
     hint: "Maintain Product Lines",
-    roles: "x_711398_se.se_admin",
+    roles: [SE_ADMIN_ROLE_NAME],
     active: true,
     order: 310,
   },
@@ -39,7 +40,7 @@ Record({
     link_type: "LIST",
     name: "x_711398_se_skill",
     hint: "Maintain Skills",
-    roles: "x_711398_se.se_admin",
+    roles: [SE_ADMIN_ROLE_NAME],
     active: true,
     order: 320,
   },
@@ -54,7 +55,7 @@ Record({
     link_type: "LIST",
     name: "x_711398_se_level",
     hint: "Maintain Score Level thresholds",
-    roles: "x_711398_se.se_admin",
+    roles: [SE_ADMIN_ROLE_NAME],
     active: true,
     order: 330,
   },

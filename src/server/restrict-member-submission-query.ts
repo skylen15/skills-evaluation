@@ -1,8 +1,6 @@
 import { GlideRecord, gs } from "@servicenow/glide";
 
-const SE_ADMIN_ROLE = "x_711398_se.se_admin";
-
-const PLATFORM_ADMIN_ROLE = "admin";
+import { PLATFORM_ADMIN_ROLE, SE_ADMIN_ROLE } from "./access-roles.ts";
 
 /**
  * Restrict Member list queries to Submissions assigned to the caller.

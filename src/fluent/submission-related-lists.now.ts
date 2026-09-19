@@ -26,6 +26,7 @@ Record({
     name: "x_711398_se_submission",
     related_list: "x_711398_se_skill_assessment.submission",
     omit_new_button: true,
+    omit_edit_button: true,
     list_edit_insert_row: false,
   },
 });

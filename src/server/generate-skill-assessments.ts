@@ -1,14 +1,12 @@
 import { GlideRecord } from "@servicenow/glide";
 
-import { applySubmissionScoreAndLevel } from "./recalculate-submission-score.ts";
-
 const SKILL_TABLE = "x_711398_se_skill";
 
 const SKILL_ASSESSMENT_TABLE = "x_711398_se_skill_assessment";
 
 const PROFICIENCY_NOT_APPLICABLE = "0";
 
-const MAX_SKILLS = 500;
+const QUERY_BATCH_SIZE = 200;
 
 /**
  * Create one Skill Assessment per Skill when a Submission is first inserted.
@@ -23,19 +21,36 @@ const MAX_SKILLS = 500;
  */
 export function generateSkillAssessments(current: GlideRecord, _previous: GlideRecord): void {
   const submissionId = current.getUniqueValue();
-  const grSkill = new GlideRecord(SKILL_TABLE);
-  grSkill.setLimit(MAX_SKILLS);
-  grSkill.query();
+  let lastSkillId = "";
+  let hasMore = true;
 
-  while (grSkill.next()) {
-    const grAssessment = new GlideRecord(SKILL_ASSESSMENT_TABLE);
-    grAssessment.initialize();
-    grAssessment.setValue("submission", submissionId);
-    grAssessment.setValue("skill", grSkill.getUniqueValue());
-    grAssessment.setValue("proficiency_level", PROFICIENCY_NOT_APPLICABLE);
-    grAssessment.setWorkflow(false);
-    grAssessment.insert();
+  // GlideRecord is required because each Skill sys_id becomes a reference on a new child row.
+  while (hasMore) {
+    const grSkill = new GlideRecord(SKILL_TABLE);
+
+    if (lastSkillId !== "") {
+      grSkill.addQuery("sys_id", ">", lastSkillId);
+    }
+
+    grSkill.orderBy("sys_id");
+    grSkill.setLimit(QUERY_BATCH_SIZE);
+    grSkill.query();
+
+    let rowsRead = 0;
+
+    while (grSkill.next()) {
+      rowsRead += 1;
+      lastSkillId = grSkill.getUniqueValue();
+
+      const grAssessment = new GlideRecord(SKILL_ASSESSMENT_TABLE);
+      grAssessment.initialize();
+      grAssessment.setValue("submission", submissionId);
+      grAssessment.setValue("skill", lastSkillId);
+      grAssessment.setValue("proficiency_level", PROFICIENCY_NOT_APPLICABLE);
+      grAssessment.setWorkflow(false);
+      grAssessment.insert();
+    }
+
+    hasMore = rowsRead === QUERY_BATCH_SIZE;
   }
-
-  applySubmissionScoreAndLevel(submissionId);
 }
