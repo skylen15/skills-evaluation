@@ -379,7 +379,7 @@ test("a user outside Skill Evaluation PM cannot take the PM gate", () => {
   const decision = decidePmGate(
     SUBMISSION_STATE.SUBMITTED,
     member("member-1"),
-    member("coe-or-member-1"),
+    member("non-pm-1"),
     false,
     PM_GATE_ACTION.APPROVE,
   );

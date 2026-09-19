@@ -3871,20 +3871,6 @@ declare global {
                         }
                     },
                     {
-                        table: 'sys_ui_policy_action'
-                        id: 'e5bf0215cbce48f39044c15606805308'
-                        key: {
-                            ui_policy: {
-                                id: 'cba23b3140394579bf126049875730ef'
-                                key: {
-                                    table: 'x_711398_se_submission'
-                                    short_description: 'Lock Description after leaving Draft'
-                                }
-                            }
-                            field: 'work_notes'
-                        }
-                    },
-                    {
                         table: 'sys_documentation'
                         id: 'e5c9f31a8a454a73ad5a2b463682d459'
                         key: {

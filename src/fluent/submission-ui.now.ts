@@ -93,10 +93,7 @@ UiPolicy({
   global: true,
   reverseIfFalse: true,
   conditions: "state!=draft",
-  actions: [
-    { field: "description", readOnly: true },
-    { field: "work_notes", readOnly: true },
-  ],
+  actions: [{ field: "description", readOnly: true }],
 });
 
 UiAction({
@@ -129,7 +126,7 @@ UiAction({
   actionName: "pm_approve_submission",
   showInsert: false,
   showUpdate: true,
-  hint: "Approve this Submitted Submission for CoE review",
+  hint: "Approve this Submitted Submission for CoE Head review",
   condition: PM_GATE_CONDITION,
   form: {
     showButton: true,

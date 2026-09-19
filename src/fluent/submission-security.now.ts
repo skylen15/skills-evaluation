@@ -8,6 +8,10 @@ const OWNER_SCRIPT = `answer = current.getValue('assigned_to') == gs.getUserID()
 
 const OWNER_DRAFT_SCRIPT = `answer = current.getValue('assigned_to') == gs.getUserID() && current.getValue('state') == '${DRAFT_STATE}';`;
 
+const NOT_COMPLETED_SCRIPT = `answer = current.getValue('state') != 'completed';`;
+
+const OWNER_NOT_COMPLETED_SCRIPT = `answer = current.getValue('assigned_to') == gs.getUserID() && current.getValue('state') != 'completed';`;
+
 Acl({
   $id: Now.ID["submission-create-se-user"],
   type: "record",
@@ -112,7 +116,8 @@ Acl({
   field: "work_notes",
   operation: "write",
   roles: [seAdmin],
-  description: "PM and CoE Head may write Work notes",
+  script: NOT_COMPLETED_SCRIPT,
+  description: "PM and CoE Head may write Work notes until the Submission is Completed",
 });
 
 Acl({
@@ -122,6 +127,6 @@ Acl({
   field: "work_notes",
   operation: "write",
   roles: [seUser],
-  script: OWNER_DRAFT_SCRIPT,
-  description: "Members may write Work notes on their own Submissions only while Draft",
+  script: OWNER_NOT_COMPLETED_SCRIPT,
+  description: "Members may write Work notes on their own Submissions until Completed",
 });
