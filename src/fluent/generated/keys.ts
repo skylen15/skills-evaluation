@@ -139,6 +139,14 @@ declare global {
                         table: 'sys_security_acl'
                         id: 'a6646c1224b54c80878abade5b9cb677'
                     }
+                    'module-all-submissions': {
+                        table: 'sys_app_module'
+                        id: '190e4ed9327a4574b6940406381e8f6d'
+                    }
+                    'module-awaiting-approval': {
+                        table: 'sys_app_module'
+                        id: '4ff6e4b4bd6b4751941406d5b4caa661'
+                    }
                     'module-certificates': {
                         table: 'sys_app_module'
                         id: '6a75fd5468574daa89ca3c05930398f2'
@@ -170,6 +178,14 @@ declare global {
                     package_json: {
                         table: 'sys_module'
                         id: '25530048efc74f06bba6e430da5a5cc0'
+                    }
+                    'pm-approve-submission': {
+                        table: 'sys_ui_action'
+                        id: '2873cba923a442daaacf36796847cd50'
+                    }
+                    'pm-reject-submission': {
+                        table: 'sys_ui_action'
+                        id: '04d6a7685c244e90a07719dda70bef82'
                     }
                     'product-line-business-apps': {
                         table: 'x_711398_se_product_line'
@@ -351,6 +367,10 @@ declare global {
                         table: 'sys_module'
                         id: '2142872a408a4f5586318c538e19bc25'
                     }
+                    'src_server_group-names_ts': {
+                        table: 'sys_module'
+                        id: '04e94114ec43446aa51ddc0b77121a59'
+                    }
                     src_server_prelude_ts: {
                         table: 'sys_module'
                         id: 'ff3047c022b5468697a49dbcfffa9ea0'
@@ -390,6 +410,10 @@ declare global {
                     'src_server_submit-for-review_ts': {
                         table: 'sys_module'
                         id: '0a775208fe4941aba9f2a3c83a3215c8'
+                    }
+                    'src_server_take-pm-gate_ts': {
+                        table: 'sys_module'
+                        id: 'fa0e0bc980944bfca45887f536535976'
                     }
                     'submission-cert-acquisition-related-list': {
                         table: 'sys_ui_related_list_entry'
@@ -434,6 +458,14 @@ declare global {
                     'submission-skill-assessment-related-list': {
                         table: 'sys_ui_related_list_entry'
                         id: '6b8ca65d46a2401db2f72844c82bdaf0'
+                    }
+                    'submission-work-notes-write-se-admin': {
+                        table: 'sys_security_acl'
+                        id: 'a5f2a45a2a07422589cc760bd8fae241'
+                    }
+                    'submission-work-notes-write-se-user-own': {
+                        table: 'sys_security_acl'
+                        id: 'de4a33e19f214ab9975c47d6411f31ee'
                     }
                     'submission-write-se-admin': {
                         table: 'sys_security_acl'
@@ -1335,6 +1367,19 @@ declare global {
                     },
                     {
                         table: 'sys_security_acl_role'
+                        id: '3c10c0c48bf34b7485dc546f43b251b1'
+                        key: {
+                            sys_security_acl: 'de4a33e19f214ab9975c47d6411f31ee'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
                         id: '3d180b237afc4bd59eb6b970e105f399'
                         key: {
                             sys_security_acl: 'ec29ee65edb349d3a05338b55913a496'
@@ -1592,6 +1637,19 @@ declare global {
                             name: 'x_711398_se_submission'
                             element: 'valid'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_action_role'
+                        id: '50434f6607914d21b49830ef71677a44'
+                        key: {
+                            sys_ui_action: '2873cba923a442daaacf36796847cd50'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -2143,6 +2201,19 @@ declare global {
                             name: 'x_711398_se_product_line'
                             element: 'name'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_action_role'
+                        id: '7658202afda74eb982a6686dd57d5934'
+                        key: {
+                            sys_ui_action: '04d6a7685c244e90a07719dda70bef82'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -2770,6 +2841,19 @@ declare global {
                         key: {
                             name: 'x_711398_se_level'
                             element: 'name'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: 'a83a0d4471254043bc582737f3bbac7c'
+                        key: {
+                            sys_security_acl: 'a5f2a45a2a07422589cc760bd8fae241'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -3784,6 +3868,20 @@ declare global {
                             }
                             element: 'name'
                             position: '1'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_policy_action'
+                        id: 'e5bf0215cbce48f39044c15606805308'
+                        key: {
+                            ui_policy: {
+                                id: 'cba23b3140394579bf126049875730ef'
+                                key: {
+                                    table: 'x_711398_se_submission'
+                                    short_description: 'Lock Description after leaving Draft'
+                                }
+                            }
+                            field: 'work_notes'
                         }
                     },
                     {

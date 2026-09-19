@@ -1,7 +1,9 @@
 import { default_view, Form, List, UiAction, UiPolicy } from "@servicenow/sdk/core";
 
+import { SKILL_EVALUATION_PM_GROUP_NAME } from "../server/group-names.js";
 import { submitForReview } from "../server/submit-for-review.js";
-import { seUser } from "./roles.now.ts";
+import { approveAtPmGate, rejectAtPmGate } from "../server/take-pm-gate.js";
+import { seAdmin, seUser } from "./roles.now.ts";
 
 Form({
   table: "x_711398_se_submission",
@@ -91,7 +93,10 @@ UiPolicy({
   global: true,
   reverseIfFalse: true,
   conditions: "state!=draft",
-  actions: [{ field: "description", readOnly: true }],
+  actions: [
+    { field: "description", readOnly: true },
+    { field: "work_notes", readOnly: true },
+  ],
 });
 
 UiAction({
@@ -111,4 +116,44 @@ UiAction({
   roles: [seUser],
   order: 100,
   script: submitForReview,
+});
+
+const PM_GATE_CONDITION = `current.getValue('state') == 'submitted' &&
+current.getValue('assigned_to') != gs.getUserID() &&
+gs.getUser().isMemberOf('${SKILL_EVALUATION_PM_GROUP_NAME}')`;
+
+UiAction({
+  $id: Now.ID["pm-approve-submission"],
+  table: "x_711398_se_submission",
+  name: "Approve",
+  actionName: "pm_approve_submission",
+  showInsert: false,
+  showUpdate: true,
+  hint: "Approve this Submitted Submission for CoE review",
+  condition: PM_GATE_CONDITION,
+  form: {
+    showButton: true,
+    style: "primary",
+  },
+  roles: [seAdmin],
+  order: 200,
+  script: approveAtPmGate,
+});
+
+UiAction({
+  $id: Now.ID["pm-reject-submission"],
+  table: "x_711398_se_submission",
+  name: "Reject",
+  actionName: "pm_reject_submission",
+  showInsert: false,
+  showUpdate: true,
+  hint: "Return this Submitted Submission to Draft",
+  condition: PM_GATE_CONDITION,
+  form: {
+    showButton: true,
+    style: "unstyled",
+  },
+  roles: [seAdmin],
+  order: 210,
+  script: rejectAtPmGate,
 });

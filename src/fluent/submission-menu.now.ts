@@ -1,6 +1,6 @@
 import { ApplicationMenu, Record } from "@servicenow/sdk/core";
 
-import { SE_USER_ROLE_NAME, seUser } from "./roles.now.ts";
+import { SE_ADMIN_ROLE_NAME, SE_USER_ROLE_NAME, seUser } from "./roles.now.ts";
 
 export const skillEvaluationMenu = ApplicationMenu({
   $id: Now.ID["skill-evaluation-menu"],
@@ -39,5 +39,36 @@ Record({
     roles: [SE_USER_ROLE_NAME],
     active: true,
     order: 200,
+  },
+});
+
+Record({
+  $id: Now.ID["module-all-submissions"],
+  table: "sys_app_module",
+  data: {
+    title: "All",
+    application: skillEvaluationMenu,
+    link_type: "LIST",
+    name: "x_711398_se_submission",
+    hint: "All Skill Evaluation Submissions",
+    roles: [SE_ADMIN_ROLE_NAME],
+    active: true,
+    order: 210,
+  },
+});
+
+Record({
+  $id: Now.ID["module-awaiting-approval"],
+  table: "sys_app_module",
+  data: {
+    title: "Awaiting Approval",
+    application: skillEvaluationMenu,
+    link_type: "FILTER",
+    name: "x_711398_se_submission",
+    filter: "stateINsubmitted,reviewed",
+    hint: "Submissions waiting at either approval gate",
+    roles: [SE_ADMIN_ROLE_NAME],
+    active: true,
+    order: 220,
   },
 });

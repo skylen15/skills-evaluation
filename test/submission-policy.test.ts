@@ -5,8 +5,10 @@ import {
   canMutateCertAcquisitions,
   decideCertAcquisitionInsert,
   decideInsert,
+  decidePmGate,
   decideSubmitForReview,
   levelForScore,
+  PM_GATE_ACTION,
   parseCertificateId,
   parseLevelId,
   parseMemberId,
@@ -320,5 +322,90 @@ test("submit is refused when the actor is not the Assigned to Member", () => {
 
   if (decision._tag === "err") {
     assert.equal(decision.error._tag, "SubmitNotAssigned");
+  }
+});
+
+test("a PM approves another Member's Submitted Submission to Reviewed", () => {
+  const decision = decidePmGate(
+    SUBMISSION_STATE.SUBMITTED,
+    member("member-1"),
+    member("pm-1"),
+    true,
+    PM_GATE_ACTION.APPROVE,
+  );
+
+  assert.equal(decision._tag, "ok");
+
+  if (decision._tag === "ok") {
+    assert.equal(decision.value, SUBMISSION_STATE.REVIEWED);
+  }
+});
+
+test("a PM rejects another Member's Submitted Submission back to Draft", () => {
+  const decision = decidePmGate(
+    SUBMISSION_STATE.SUBMITTED,
+    member("member-1"),
+    member("pm-1"),
+    true,
+    PM_GATE_ACTION.REJECT,
+  );
+
+  assert.equal(decision._tag, "ok");
+
+  if (decision._tag === "ok") {
+    assert.equal(decision.value, SUBMISSION_STATE.DRAFT);
+  }
+});
+
+test("the Assigned to user cannot take the PM gate even when they are a PM", () => {
+  const assignedTo = member("pm-1");
+
+  const decision = decidePmGate(
+    SUBMISSION_STATE.SUBMITTED,
+    assignedTo,
+    assignedTo,
+    true,
+    PM_GATE_ACTION.APPROVE,
+  );
+
+  assert.equal(decision._tag, "err");
+
+  if (decision._tag === "err") {
+    assert.equal(decision.error._tag, "PmSelfReviewNotAllowed");
+  }
+});
+
+test("a user outside Skill Evaluation PM cannot take the PM gate", () => {
+  const decision = decidePmGate(
+    SUBMISSION_STATE.SUBMITTED,
+    member("member-1"),
+    member("coe-or-member-1"),
+    false,
+    PM_GATE_ACTION.APPROVE,
+  );
+
+  assert.equal(decision._tag, "err");
+
+  if (decision._tag === "err") {
+    assert.equal(decision.error._tag, "PmMembershipRequired");
+  }
+});
+
+test("the PM gate refuses every state except Submitted", () => {
+  const assignedTo = member("member-1");
+  const actor = member("pm-1");
+
+  for (const state of [
+    SUBMISSION_STATE.DRAFT,
+    SUBMISSION_STATE.REVIEWED,
+    SUBMISSION_STATE.COMPLETED,
+  ]) {
+    const decision = decidePmGate(state, assignedTo, actor, true, PM_GATE_ACTION.APPROVE);
+
+    assert.equal(decision._tag, "err");
+
+    if (decision._tag === "err") {
+      assert.equal(decision.error._tag, "PmGateNotAvailable");
+    }
   }
 });

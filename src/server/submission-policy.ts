@@ -475,6 +475,98 @@ export function decideSubmitForReview(
 }
 
 /**
+ * First-gate actions available to a PM.
+ */
+export const PM_GATE_ACTION = {
+  APPROVE: "approve",
+  REJECT: "reject",
+} as const;
+
+/**
+ * A first-gate PM action.
+ */
+export type PmGateAction = (typeof PM_GATE_ACTION)[keyof typeof PM_GATE_ACTION];
+
+/**
+ * Refused because the actor is not a member of Skill Evaluation PM.
+ */
+export class PmMembershipRequired extends Error {
+  readonly _tag = "PmMembershipRequired";
+
+  constructor() {
+    super("Only a member of Skill Evaluation PM may take the PM gate");
+    this.name = "PmMembershipRequired";
+  }
+}
+
+/**
+ * Refused because the Submission is not waiting at the PM gate.
+ */
+export class PmGateNotAvailable extends Error {
+  readonly _tag = "PmGateNotAvailable";
+
+  /** Lifecycle state that blocked the PM gate. */
+  readonly state: SubmissionState;
+
+  /**
+   * @param state - Lifecycle state that blocked the PM gate.
+   */
+  constructor(state: SubmissionState) {
+    super("PM approval and rejection are only available on Submitted");
+    this.name = "PmGateNotAvailable";
+    this.state = state;
+  }
+}
+
+/**
+ * Refused because a PM cannot review their own Submission.
+ */
+export class PmSelfReviewNotAllowed extends Error {
+  readonly _tag = "PmSelfReviewNotAllowed";
+
+  constructor() {
+    super("A PM cannot approve or reject a Submission assigned to themselves");
+    this.name = "PmSelfReviewNotAllowed";
+  }
+}
+
+/**
+ * Decide the first approval gate for a Submitted Submission.
+ *
+ * @param state - Current Submission lifecycle state.
+ * @param assignedTo - Member the Submission is assigned to.
+ * @param actor - Caller attempting to take the gate.
+ * @param isPm - Whether the caller belongs to Skill Evaluation PM.
+ * @param action - Approve to Reviewed, or reject back to Draft.
+ * @returns The next state when allowed, or a tagged refusal.
+ */
+export function decidePmGate(
+  state: SubmissionState,
+  assignedTo: MemberId,
+  actor: MemberId,
+  isPm: boolean,
+  action: PmGateAction,
+): Result<SubmissionState, PmMembershipRequired | PmGateNotAvailable | PmSelfReviewNotAllowed> {
+  if (!isPm) {
+    return err(new PmMembershipRequired());
+  }
+
+  if (state !== SUBMISSION_STATE.SUBMITTED) {
+    return err(new PmGateNotAvailable(state));
+  }
+
+  if (actor === assignedTo) {
+    return err(new PmSelfReviewNotAllowed());
+  }
+
+  if (action === PM_GATE_ACTION.APPROVE) {
+    return ok(SUBMISSION_STATE.REVIEWED);
+  }
+
+  return ok(SUBMISSION_STATE.DRAFT);
+}
+
+/**
  * Parse a stored Proficiency Level.
  *
  * @param raw - The choice value from a Skill Assessment row.

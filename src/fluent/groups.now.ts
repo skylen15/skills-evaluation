@@ -1,5 +1,6 @@
 import { Record } from "@servicenow/sdk/core";
 
+import { SKILL_EVALUATION_PM_GROUP_NAME } from "../server/group-names.js";
 import { seAdmin, seUser } from "./roles.now.ts";
 
 /** Group that grants se_user to Members. */
@@ -18,7 +19,7 @@ export const skillEvaluationPm = Record({
   $id: Now.ID["skill-evaluation-pm-group"],
   table: "sys_user_group",
   data: {
-    name: "Skill Evaluation PM",
+    name: SKILL_EVALUATION_PM_GROUP_NAME,
     description: "ECA project managers who take the first approval gate",
     active: true,
   },

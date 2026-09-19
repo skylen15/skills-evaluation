@@ -104,3 +104,24 @@ Acl({
   script: OWNER_DRAFT_SCRIPT,
   description: "Members may write Description on their own Submissions only while Draft",
 });
+
+Acl({
+  $id: Now.ID["submission-work-notes-write-se-admin"],
+  type: "record",
+  table: "x_711398_se_submission",
+  field: "work_notes",
+  operation: "write",
+  roles: [seAdmin],
+  description: "PM and CoE Head may write Work notes",
+});
+
+Acl({
+  $id: Now.ID["submission-work-notes-write-se-user-own"],
+  type: "record",
+  table: "x_711398_se_submission",
+  field: "work_notes",
+  operation: "write",
+  roles: [seUser],
+  script: OWNER_DRAFT_SCRIPT,
+  description: "Members may write Work notes on their own Submissions only while Draft",
+});
