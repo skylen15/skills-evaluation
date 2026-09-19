@@ -150,3 +150,157 @@ export function decideInsert(
 
   return ok(undefined);
 }
+
+/**
+ * How strongly a member claims a Skill (0 Not Applicable through 4 Guru).
+ */
+export type ProficiencyLevel = 0 | 1 | 2 | 3 | 4;
+
+/**
+ * Plain snapshot of a Skill Assessment used by Score policy.
+ */
+export type SkillAssessmentSnapshot = {
+  /** Claimed Proficiency Level for one Skill. */
+  readonly proficiency: ProficiencyLevel;
+
+  /**
+   * Weight stored on the Skill. Score policy ignores this value.
+   */
+  readonly skillWeight: number;
+};
+
+/**
+ * Sum Proficiency Levels on a Submission. Skill Weight is not part of the sum.
+ *
+ * @param assessments - Snapshots of every Skill Assessment on the Submission.
+ * @returns The Score as the unweighted sum of Proficiency Levels.
+ */
+export function scoreFromAssessments(assessments: ReadonlyArray<SkillAssessmentSnapshot>): number {
+  let score = 0;
+
+  for (const assessment of assessments) {
+    score += assessment.proficiency;
+  }
+
+  return score;
+}
+
+/**
+ * Sys id of a Level threshold row.
+ */
+export type LevelId = string & { readonly __brand: "LevelId" };
+
+/**
+ * Level sys id was missing or empty.
+ */
+export class InvalidLevelId extends Error {
+  readonly _tag = "InvalidLevelId";
+
+  constructor() {
+    super("Level is required");
+    this.name = "InvalidLevelId";
+  }
+}
+
+/**
+ * Parse a Level sys id from an untrusted string.
+ *
+ * @param raw - The sys id from a Level row.
+ * @returns A LevelId, or InvalidLevelId when empty.
+ */
+export function parseLevelId(raw: string): Result<LevelId, InvalidLevelId> {
+  if (raw === "") {
+    return err(new InvalidLevelId());
+  }
+
+  // SAFETY: empty strings are rejected; remaining values are treated as Level sys ids.
+  return ok(raw as LevelId);
+}
+
+/**
+ * Plain snapshot of a Level threshold used to band a Score.
+ */
+export type LevelThresholdSnapshot = {
+  /** Sys id of the Level row. */
+  readonly id: LevelId;
+
+  /** Lowest Score that qualifies for this Level. */
+  readonly minScore: number;
+};
+
+/**
+ * Choose the Level whose min score is the highest value still less than or equal to Score.
+ *
+ * @param score - The Submission Score.
+ * @param thresholds - Seeded Level rows.
+ * @returns The matching Level id, or undefined when Score is below every min score.
+ */
+export function levelForScore(
+  score: number,
+  thresholds: ReadonlyArray<LevelThresholdSnapshot>,
+): LevelId | undefined {
+  let chosen: LevelThresholdSnapshot | undefined;
+
+  for (const threshold of thresholds) {
+    if (threshold.minScore > score) {
+      continue;
+    }
+
+    if (chosen === undefined || threshold.minScore > chosen.minScore) {
+      chosen = threshold;
+    }
+  }
+
+  return chosen?.id;
+}
+
+/**
+ * Proficiency Level was not one of 0–4.
+ */
+export class InvalidProficiencyLevel extends Error {
+  readonly _tag = "InvalidProficiencyLevel";
+
+  /** The unrecognised dictionary value. */
+  readonly raw: string;
+
+  /**
+   * @param raw - The unrecognised proficiency string.
+   */
+  constructor(raw: string) {
+    super("Unknown Proficiency Level");
+    this.name = "InvalidProficiencyLevel";
+    this.raw = raw;
+  }
+}
+
+/**
+ * Parse a stored Proficiency Level.
+ *
+ * @param raw - The choice value from a Skill Assessment row.
+ * @returns A ProficiencyLevel, or InvalidProficiencyLevel when unknown.
+ */
+export function parseProficiencyLevel(
+  raw: string,
+): Result<ProficiencyLevel, InvalidProficiencyLevel> {
+  if (raw === "0") {
+    return ok(0);
+  }
+
+  if (raw === "1") {
+    return ok(1);
+  }
+
+  if (raw === "2") {
+    return ok(2);
+  }
+
+  if (raw === "3") {
+    return ok(3);
+  }
+
+  if (raw === "4") {
+    return ok(4);
+  }
+
+  return err(new InvalidProficiencyLevel(raw));
+}

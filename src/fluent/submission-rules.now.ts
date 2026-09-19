@@ -1,5 +1,6 @@
 import { BusinessRule } from "@servicenow/sdk/core";
 
+import { generateSkillAssessments } from "../server/generate-skill-assessments.js";
 import { refuseInProgressInsert } from "../server/refuse-in-progress-insert.js";
 import { restrictMemberSubmissionQuery } from "../server/restrict-member-submission-query.js";
 
@@ -26,4 +27,16 @@ BusinessRule({
   active: true,
   script: restrictMemberSubmissionQuery,
   description: "Members see only Submissions assigned to themselves; se_admin is unrestricted",
+});
+
+BusinessRule({
+  $id: Now.ID["generate-skill-assessments"],
+  name: "Generate Skill Assessments",
+  table: "x_711398_se_submission",
+  when: "after",
+  action: ["insert"],
+  order: 100,
+  active: true,
+  script: generateSkillAssessments,
+  description: "Create one Skill Assessment per Skill when a Submission is first inserted",
 });

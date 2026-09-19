@@ -18,6 +18,7 @@ Form({
             { field: "state", type: "table_field" },
             { field: "opened_by", type: "table_field" },
             { field: "score", type: "table_field" },
+            { field: "level", type: "table_field" },
           ],
         },
         {
@@ -64,5 +65,17 @@ UiPolicy({
     { field: "opened_by", readOnly: true },
     { field: "valid", readOnly: true },
     { field: "score", readOnly: true },
+    { field: "level", readOnly: true },
   ],
+});
+
+UiPolicy({
+  $id: Now.ID["hide-level-in-draft"],
+  table: "x_711398_se_submission",
+  shortDescription: "Hide Level while the Submission is Draft",
+  onLoad: true,
+  global: true,
+  reverseIfFalse: true,
+  conditions: "state=draft",
+  actions: [{ field: "level", visible: false }],
 });

@@ -66,6 +66,11 @@ export const x_711398_se_submission = Table({
       default: 0,
       readOnly: true,
     }),
+    level: ReferenceColumn({
+      label: "Level",
+      referenceTable: "x_711398_se_level",
+      readOnly: true,
+    }),
     valid: BooleanColumn({
       label: "Valid",
       default: false,

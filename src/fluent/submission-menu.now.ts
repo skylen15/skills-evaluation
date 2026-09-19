@@ -2,7 +2,7 @@ import { ApplicationMenu, Record } from "@servicenow/sdk/core";
 
 import { seUser } from "./roles.now.ts";
 
-const skillEvaluationMenu = ApplicationMenu({
+export const skillEvaluationMenu = ApplicationMenu({
   $id: Now.ID["skill-evaluation-menu"],
   title: "Skill Evaluation",
   hint: "Self-assessment Submissions",

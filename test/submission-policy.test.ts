@@ -3,8 +3,12 @@ import { test } from "node:test";
 
 import {
   decideInsert,
+  levelForScore,
+  parseLevelId,
   parseMemberId,
+  scoreFromAssessments,
   SUBMISSION_STATE,
+  type LevelId,
   type MemberId,
 } from "../src/server/submission-policy.ts";
 
@@ -14,6 +18,20 @@ import {
  */
 function member(raw: string): MemberId {
   const parsed = parseMemberId(raw);
+
+  if (parsed._tag === "err") {
+    throw parsed.error;
+  }
+
+  return parsed.value;
+}
+
+/**
+ * @param raw - A known-good Level id for tests.
+ * @returns A parsed LevelId.
+ */
+function level(raw: string): LevelId {
+  const parsed = parseLevelId(raw);
 
   if (parsed._tag === "err") {
     throw parsed.error;
@@ -69,4 +87,51 @@ test("insert is allowed when only another member has an in-progress Submission",
   ]);
 
   assert.equal(decision._tag, "ok");
+});
+
+test("Score is the sum of Proficiency Levels", () => {
+  const score = scoreFromAssessments([
+    { proficiency: 0, skillWeight: 1 },
+    { proficiency: 2, skillWeight: 1 },
+    { proficiency: 4, skillWeight: 1 },
+  ]);
+
+  assert.equal(score, 6);
+});
+
+test("Score ignores Skill Weight", () => {
+  const score = scoreFromAssessments([
+    { proficiency: 2, skillWeight: 10 },
+    { proficiency: 3, skillWeight: 100 },
+  ]);
+
+  assert.equal(score, 5);
+});
+
+test("Level is the seeded row with the greatest min score still at or below Score", () => {
+  const elementary = level("level-elementary");
+  const preIntermediate = level("level-pre-intermediate");
+  const intermediate = level("level-intermediate");
+  const upperIntermediate = level("level-upper-intermediate");
+  const advanced = level("level-advanced");
+
+  const thresholds = [
+    { id: elementary, minScore: 15 },
+    { id: preIntermediate, minScore: 25 },
+    { id: intermediate, minScore: 30 },
+    { id: upperIntermediate, minScore: 45 },
+    { id: advanced, minScore: 60 },
+  ];
+
+  assert.equal(levelForScore(30, thresholds), intermediate);
+  assert.equal(levelForScore(44, thresholds), intermediate);
+  assert.equal(levelForScore(45, thresholds), upperIntermediate);
+  assert.equal(levelForScore(60, thresholds), advanced);
+});
+
+test("Level is empty when Score is below 15", () => {
+  const elementary = level("level-elementary");
+
+  assert.equal(levelForScore(0, [{ id: elementary, minScore: 15 }]), undefined);
+  assert.equal(levelForScore(14, [{ id: elementary, minScore: 15 }]), undefined);
 });
