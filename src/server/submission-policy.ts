@@ -253,6 +253,133 @@ export function levelForScore(
 }
 
 /**
+ * Sys id of a Submission row.
+ */
+export type SubmissionId = string & { readonly __brand: "SubmissionId" };
+
+/**
+ * Submission sys id was missing or empty.
+ */
+export class InvalidSubmissionId extends Error {
+  readonly _tag = "InvalidSubmissionId";
+
+  constructor() {
+    super("Submission is required");
+    this.name = "InvalidSubmissionId";
+  }
+}
+
+/**
+ * Parse a Submission sys id from an untrusted string.
+ *
+ * @param raw - The Submission reference value from a child row.
+ * @returns A SubmissionId, or InvalidSubmissionId when empty.
+ */
+export function parseSubmissionId(raw: string): Result<SubmissionId, InvalidSubmissionId> {
+  if (raw === "") {
+    return err(new InvalidSubmissionId());
+  }
+
+  // SAFETY: empty strings are rejected; remaining values are treated as Submission sys ids.
+  return ok(raw as SubmissionId);
+}
+
+/**
+ * Sys id of a Certificate reference row.
+ */
+export type CertificateId = string & { readonly __brand: "CertificateId" };
+
+/**
+ * Certificate sys id was missing or empty.
+ */
+export class InvalidCertificateId extends Error {
+  readonly _tag = "InvalidCertificateId";
+
+  constructor() {
+    super("Certificate is required");
+    this.name = "InvalidCertificateId";
+  }
+}
+
+/**
+ * Parse a Certificate sys id from an untrusted string.
+ *
+ * @param raw - The Certificate reference value from a Cert Acquisition.
+ * @returns A CertificateId, or InvalidCertificateId when empty.
+ */
+export function parseCertificateId(raw: string): Result<CertificateId, InvalidCertificateId> {
+  if (raw === "") {
+    return err(new InvalidCertificateId());
+  }
+
+  // SAFETY: empty strings are rejected; remaining values are treated as Certificate sys ids.
+  return ok(raw as CertificateId);
+}
+
+/**
+ * Plain snapshot of a Cert Acquisition used by uniqueness policy.
+ */
+export type CertAcquisitionSnapshot = {
+  /** Submission on which the Certificate is claimed. */
+  readonly submission: SubmissionId;
+
+  /** Certificate claimed on the Submission. */
+  readonly certificate: CertificateId;
+};
+
+/**
+ * Refused because the Certificate is already claimed on this Submission.
+ */
+export class CertificateAlreadyClaimed extends Error {
+  readonly _tag = "CertificateAlreadyClaimed";
+
+  /** Certificate that is already claimed. */
+  readonly certificate: CertificateId;
+
+  /**
+   * @param certificate - Certificate that is already claimed.
+   */
+  constructor(certificate: CertificateId) {
+    super("This Certificate is already claimed on the Submission");
+    this.name = "CertificateAlreadyClaimed";
+    this.certificate = certificate;
+  }
+}
+
+/**
+ * Decide whether a Certificate may be claimed on a Submission.
+ *
+ * @param candidate - Submission and Certificate on the new Cert Acquisition.
+ * @param existing - Existing Cert Acquisitions.
+ * @returns Ok when unique, or CertificateAlreadyClaimed when already present.
+ */
+export function decideCertAcquisitionInsert(
+  candidate: CertAcquisitionSnapshot,
+  existing: ReadonlyArray<CertAcquisitionSnapshot>,
+): Result<void, CertificateAlreadyClaimed> {
+  for (const acquisition of existing) {
+    if (
+      acquisition.submission === candidate.submission &&
+      acquisition.certificate === candidate.certificate
+    ) {
+      return err(new CertificateAlreadyClaimed(candidate.certificate));
+    }
+  }
+
+  return ok(undefined);
+}
+
+/**
+ * Whether Cert Acquisitions may be added or removed for a Submission.
+ *
+ * @param state - Parent Submission lifecycle state.
+ * @returns True only while the Submission is Draft.
+ */
+export function canMutateCertAcquisitions(state: SubmissionState): boolean {
+  return state === SUBMISSION_STATE.DRAFT;
+}
+
+/**
  * Proficiency Level was not one of 0–4.
  */
 export class InvalidProficiencyLevel extends Error {

@@ -9,6 +9,88 @@ declare global {
                         table: 'sys_module'
                         id: '62ef218cdcdd4f20a19f3bc13d241218'
                     }
+                    'cert-acquisition-create-se-admin': {
+                        table: 'sys_security_acl'
+                        id: 'a97ff2711f73413f838e090f6527d66d'
+                    }
+                    'cert-acquisition-create-se-user-own': {
+                        table: 'sys_security_acl'
+                        id: 'e1ac52bea5304a23ac3074c7f7e4c438'
+                    }
+                    'cert-acquisition-delete-se-admin': {
+                        table: 'sys_security_acl'
+                        id: '60ffbab0b1d04c17b1caf3d2d0eba4e6'
+                    }
+                    'cert-acquisition-delete-se-user-own': {
+                        table: 'sys_security_acl'
+                        id: '9f3d390c13ce40dfad5ae1df455497ef'
+                    }
+                    'cert-acquisition-field-read': {
+                        table: 'sys_security_acl'
+                        id: '020c8cc7db774a49b29dcaef044421e1'
+                    }
+                    'cert-acquisition-field-write': {
+                        table: 'sys_security_acl'
+                        id: 'c4e9be0544c24a2eb12587aa45bafcdf'
+                    }
+                    'cert-acquisition-read-se-admin': {
+                        table: 'sys_security_acl'
+                        id: '675c2c6f247045f69f3688fd28dc9f77'
+                    }
+                    'cert-acquisition-read-se-user-own': {
+                        table: 'sys_security_acl'
+                        id: '7cb0ea00e8c948d89254f26106375d29'
+                    }
+                    'cert-acquisition-related-list-control': {
+                        table: 'sys_ui_list_control'
+                        id: '53434dfc52814558870366ed22c61356'
+                    }
+                    'cert-acquisition-write-se-admin': {
+                        table: 'sys_security_acl'
+                        id: '80afae9c59da45c990b5a14d6e9408f9'
+                        deleted: true
+                    }
+                    'cert-acquisition-write-se-user-own': {
+                        table: 'sys_security_acl'
+                        id: '0e6da5983e5448d5b0040db511c4d221'
+                        deleted: true
+                    }
+                    'certificate-application-developer': {
+                        table: 'x_711398_se_certificate'
+                        id: '3e23d94badd34acc95ddce900819144e'
+                    }
+                    'certificate-create-se-admin': {
+                        table: 'sys_security_acl'
+                        id: '0936a921c5fd47d4a5bfbd16cfc43810'
+                    }
+                    'certificate-delete-se-admin': {
+                        table: 'sys_security_acl'
+                        id: 'fee7f2b5856741e2a05818e5dff5a8e2'
+                    }
+                    'certificate-field-read': {
+                        table: 'sys_security_acl'
+                        id: '1df1e2cfc5ed441382717236265d87c3'
+                    }
+                    'certificate-field-write': {
+                        table: 'sys_security_acl'
+                        id: 'bcae67a6a1464b87bac57bc16b245cd2'
+                    }
+                    'certificate-implementation-specialist-itsm': {
+                        table: 'x_711398_se_certificate'
+                        id: '250c8c4225ce4662b0801b76f48b43ed'
+                    }
+                    'certificate-read-se-user': {
+                        table: 'sys_security_acl'
+                        id: 'ec29ee65edb349d3a05338b55913a496'
+                    }
+                    'certificate-system-administrator': {
+                        table: 'x_711398_se_certificate'
+                        id: '66d65426f9724e309a30ef4d996acf29'
+                    }
+                    'certificate-write-se-admin': {
+                        table: 'sys_security_acl'
+                        id: '0206fb7425844194a6cd7498fffbf753'
+                    }
                     'generate-skill-assessments': {
                         table: 'sys_script'
                         id: '77fa36e056684782b6adc446b218e498'
@@ -56,6 +138,10 @@ declare global {
                     'level-write-se-admin': {
                         table: 'sys_security_acl'
                         id: 'a6646c1224b54c80878abade5b9cb677'
+                    }
+                    'module-certificates': {
+                        table: 'sys_app_module'
+                        id: '6a75fd5468574daa89ca3c05930398f2'
                     }
                     'module-levels': {
                         table: 'sys_app_module'
@@ -125,6 +211,10 @@ declare global {
                         table: 'sys_script'
                         id: '467e29b2730047cebdc83d408d9ceb29'
                     }
+                    'refuse-duplicate-cert-acquisition': {
+                        table: 'sys_script'
+                        id: '713a468e09cc42ddae99018e2e6b177c'
+                    }
                     'refuse-extra-skill-assessment-insert': {
                         table: 'sys_script'
                         id: '17e999c42ca84140bd178658dfaf228d'
@@ -132,6 +222,10 @@ declare global {
                     'refuse-in-progress-insert': {
                         table: 'sys_script'
                         id: '70183ee27b3440ec9490d2d340592c20'
+                    }
+                    'restrict-member-cert-acquisition-query': {
+                        table: 'sys_script'
+                        id: '982ea36a5c5c4a0b9254c2ffe15b23a8'
                     }
                     'restrict-member-skill-assessment-query': {
                         table: 'sys_script'
@@ -265,6 +359,10 @@ declare global {
                         table: 'sys_module'
                         id: 'b56d5644e7c446cea30b453b38c1e90f'
                     }
+                    'src_server_refuse-duplicate-cert-acquisition_ts': {
+                        table: 'sys_module'
+                        id: '1a39610c6064443d80f4bbf6d179f3bc'
+                    }
                     'src_server_refuse-extra-skill-assessment-insert_ts': {
                         table: 'sys_module'
                         id: 'f952e6b81a1c47709ca79d504cc71f0f'
@@ -272,6 +370,10 @@ declare global {
                     'src_server_refuse-in-progress-insert_ts': {
                         table: 'sys_module'
                         id: 'c3a190f029ed473ea7a8967bcb539685'
+                    }
+                    'src_server_restrict-member-cert-acquisition-query_ts': {
+                        table: 'sys_module'
+                        id: 'dbe7365aaec94ff3a18a918d68618075'
                     }
                     'src_server_restrict-member-skill-assessment-query_ts': {
                         table: 'sys_module'
@@ -284,6 +386,10 @@ declare global {
                     'src_server_submission-policy_ts': {
                         table: 'sys_module'
                         id: 'e58387ead6be4440a382432a0bd3a611'
+                    }
+                    'submission-cert-acquisition-related-list': {
+                        table: 'sys_ui_related_list_entry'
+                        id: 'e2f290ef46cb4a11a56a8776a9450f2e'
                     }
                     'submission-create-se-user': {
                         table: 'sys_security_acl'
@@ -366,6 +472,42 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_security_acl_role'
+                        id: '03530c06d9914756a1df530ba1ccb6a1'
+                        key: {
+                            sys_security_acl: '0206fb7425844194a6cd7498fffbf753'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list_element'
+                        id: '0727fb7d83f34f01825260374ff22d70'
+                        key: {
+                            list_id: {
+                                id: '28bb75635f54414290c1e10f72171546'
+                                key: {
+                                    name: 'x_711398_se_cert_acquisition'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'certificate'
+                        }
+                    },
+                    {
                         table: 'sys_ui_list_element'
                         id: '08cb583e26fd4f53ab82b216ef75e54e'
                         key: {
@@ -408,6 +550,20 @@ declare global {
                             name: 'x_711398_se_submission'
                             element: 'number'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_form'
+                        id: '0a8fee7400d64f7aa77954fe0dbc14f2'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                            view: {
+                                id: 'Default view'
+                                key: {
+                                    name: 'NULL'
+                                }
+                            }
+                            sys_domain: 'global'
                         }
                     },
                     {
@@ -521,6 +677,20 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_form'
+                        id: '10d22a8d39b34b2aa6f6ac12f8da8cea'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                            view: {
+                                id: 'Default view'
+                                key: {
+                                    name: 'NULL'
+                                }
+                            }
+                            sys_domain: 'global'
+                        }
+                    },
+                    {
                         table: 'sys_documentation'
                         id: '16169fdc7cf44976bd868c32d92b1c7d'
                         key: {
@@ -563,6 +733,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_documentation'
+                        id: '18aeaf129b6d4d4db68d8124e755e9e7'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                            element: 'product_line'
+                            language: 'en'
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: '18b66100f83a46ccb6163e6c9472c750'
                         key: {
@@ -579,11 +758,50 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_list_element'
+                        id: '1a4cf8fb6119449cbd79e360d0a81fa6'
+                        key: {
+                            list_id: {
+                                id: '3bb01c449a8f4ea2b443f8189dd4fdae'
+                                key: {
+                                    name: 'x_711398_se_certificate'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'product_line'
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: '1c3490cc26b945eaaf5ed608a4de9445'
                         key: {
                             name: 'x_711398_se_submission'
                             element: 'valid'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: '1c4a7f10e8464405be57a19196de7168'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                            element: 'certificate'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: '1e067aac4576437ebc3f77ac276757a6'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                            element: 'NULL'
                         }
                     },
                     {
@@ -715,6 +933,31 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_list'
+                        id: '28bb75635f54414290c1e10f72171546'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                            view: {
+                                id: 'Default view'
+                                key: {
+                                    name: 'NULL'
+                                }
+                            }
+                            sys_domain: 'global'
+                            element: 'NULL'
+                            relationship: 'NULL'
+                            parent: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: '2928a204e5e84e03af9b0c51afbc5e34'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                            element: 'submission'
+                        }
+                    },
+                    {
                         table: 'sys_ui_list_element'
                         id: '2a9d1fff841948e3af7f98440c67b045'
                         key: {
@@ -735,6 +978,19 @@ declare global {
                                 }
                             }
                             element: 'description'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '2d209c9b1a4a4a91bf7a2164e78c7fb0'
+                        key: {
+                            sys_security_acl: '60ffbab0b1d04c17b1caf3d2d0eba4e6'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -842,6 +1098,13 @@ declare global {
                             }
                             element: '.begin_split'
                             position: '0'
+                        }
+                    },
+                    {
+                        table: 'ua_table_licensing_config'
+                        id: '350fa0bb2bc44b88add211d9dda34040'
+                        key: {
+                            name: 'x_711398_se_certificate'
                         }
                     },
                     {
@@ -967,6 +1230,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_dictionary'
+                        id: '3aaf456590724aa3a54d74b9071cc9e2'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                            element: 'product_line'
+                        }
+                    },
+                    {
                         table: 'sys_choice'
                         id: '3ab99f2b51f14047b5f7d591015396bf'
                         key: {
@@ -983,6 +1254,50 @@ declare global {
                         key: {
                             logical_table_name: 'x_711398_se_submission'
                             col_name_string: 'assigned_to'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list'
+                        id: '3bb01c449a8f4ea2b443f8189dd4fdae'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                            view: {
+                                id: 'Default view'
+                                key: {
+                                    name: 'NULL'
+                                }
+                            }
+                            sys_domain: 'global'
+                            element: 'NULL'
+                            relationship: 'NULL'
+                            parent: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '3d180b237afc4bd59eb6b970e105f399'
+                        key: {
+                            sys_security_acl: 'ec29ee65edb349d3a05338b55913a496'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '3dd48c9ca0fa4051acfcfa258800b406'
+                        deleted: true
+                        key: {
+                            sys_security_acl: '0e6da5983e5448d5b0040db511c4d221'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
                         }
                     },
                     {
@@ -1033,6 +1348,19 @@ declare global {
                         key: {
                             logical_table_name: 'x_711398_se_skill_assessment'
                             col_name_string: 'submission,skill'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '455813e2904341f3b077c7965dcf050c'
+                        key: {
+                            sys_security_acl: 'c4e9be0544c24a2eb12587aa45bafcdf'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
                         }
                     },
                     {
@@ -1097,6 +1425,24 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_documentation'
+                        id: '4b2926b0e7894d1588ce18ae248e5781'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                            element: 'NULL'
+                            language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_documentation'
+                        id: '4c3fa15ba01a4a8298c4fffd402b97c3'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                            element: 'name'
+                            language: 'en'
+                        }
+                    },
+                    {
                         table: 'sys_ui_element'
                         id: '4d1f690877e74fd08d0c7d4eb281d2e5'
                         key: {
@@ -1116,6 +1462,28 @@ declare global {
                             }
                             element: 'level'
                             position: '8'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: '4dcc1327bbe6485e8997a5b1c8b6e81f'
+                        key: {
+                            sys_ui_section: {
+                                id: '57e31fa2bb9345109934ce0f371c298d'
+                                key: {
+                                    name: 'x_711398_se_cert_acquisition'
+                                    caption: 'Cert Acquisition'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: 'certificate.product_line'
+                            position: '3'
                         }
                     },
                     {
@@ -1209,6 +1577,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_documentation'
+                        id: '53b5d5b655b848d5b92ed96ca717ecd8'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                            element: 'submission'
+                            language: 'en'
+                        }
+                    },
+                    {
                         table: 'sys_ui_element'
                         id: '54ec944e24054d26b67c7446d6c0a84b'
                         key: {
@@ -1250,6 +1627,32 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_security_acl_role'
+                        id: '564ec3d991174e86a90204f08bdde79f'
+                        key: {
+                            sys_security_acl: '9f3d390c13ce40dfad5ae1df455497ef'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '565659a3839f4aef87034849edfffb98'
+                        key: {
+                            sys_security_acl: '7cb0ea00e8c948d89254f26106375d29'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_ui_list_element'
                         id: '570c4c2972f1454284149611c378ba7e'
                         key: {
@@ -1288,10 +1691,51 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_section'
+                        id: '57e31fa2bb9345109934ce0f371c298d'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                            caption: 'Cert Acquisition'
+                            view: {
+                                id: 'Default view'
+                                key: {
+                                    name: 'NULL'
+                                }
+                            }
+                            sys_domain: 'global'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '58223ca4aa56463da638abdff81cc007'
+                        key: {
+                            sys_security_acl: 'a97ff2711f73413f838e090f6527d66d'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_security_acl_role'
                         id: '5a367442e14c45ac8ad8ea6330fefe07'
                         key: {
                             sys_security_acl: '2612bdb38f67437391717bbeb310fead'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '5aabb76b353e4ccab019dd11e35dc6bf'
+                        key: {
+                            sys_security_acl: '1df1e2cfc5ed441382717236265d87c3'
                             sys_user_role: {
                                 id: '510864fdf2b84952a7595fe5e602132e'
                                 key: {
@@ -1413,6 +1857,20 @@ declare global {
                                 }
                             }
                             element: 'weight'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '654e758c661649aca0bc525b9e524011'
+                        deleted: true
+                        key: {
+                            sys_security_acl: '80afae9c59da45c990b5a14d6e9408f9'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -1680,9 +2138,29 @@ declare global {
                     },
                     {
                         table: 'ua_table_licensing_config'
+                        id: '7b02d421e5eb4833949b88df348fbc00'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                        }
+                    },
+                    {
+                        table: 'ua_table_licensing_config'
                         id: '7d9c5b68eb474488a45491cfe27db885'
                         key: {
                             name: 'x_711398_se_skill'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '7e49cd5b0e93422e90fa36e259678869'
+                        key: {
+                            sys_security_acl: '675c2c6f247045f69f3688fd28dc9f77'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -1849,6 +2327,35 @@ declare global {
                     },
                     {
                         table: 'sys_ui_element'
+                        id: '87ef280f2e4e410990eb8c6f1c6e59fd'
+                        key: {
+                            sys_ui_section: {
+                                id: 'ef93ff79d7c74c02807b63e2d25fa3a1'
+                                key: {
+                                    name: 'x_711398_se_certificate'
+                                    caption: 'Certificate'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: '.split'
+                            position: '2'
+                        }
+                    },
+                    {
+                        table: 'sys_db_object'
+                        id: '882d52ba9f574f5498f4c0b74eff89cc'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
                         id: '885956c8a75d4dfeb001ddb4620a6983'
                         key: {
                             sys_ui_section: {
@@ -1870,6 +2377,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_documentation'
+                        id: '89f3ab8526d74d6eb9d848d2b20ad41a'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                            element: 'NULL'
+                            language: 'en'
+                        }
+                    },
+                    {
                         table: 'sys_ui_section'
                         id: '8c8c0b06ea894d8f866b3543694b5ce1'
                         key: {
@@ -1882,6 +2398,14 @@ declare global {
                                 }
                             }
                             sys_domain: 'global'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: '8db33926b25b49358cd9d07b7de469f4'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                            element: 'NULL'
                         }
                     },
                     {
@@ -2196,6 +2720,28 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_element'
+                        id: 'acc1c3ea52c24205a0034ee0879175e5'
+                        key: {
+                            sys_ui_section: {
+                                id: '57e31fa2bb9345109934ce0f371c298d'
+                                key: {
+                                    name: 'x_711398_se_cert_acquisition'
+                                    caption: 'Cert Acquisition'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: '.split'
+                            position: '2'
+                        }
+                    },
+                    {
                         table: 'sys_security_acl_role'
                         id: 'add371b3c05349d3a6d5247add8af6cb'
                         key: {
@@ -2299,6 +2845,41 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_element'
+                        id: 'b214287460a746fc88c7d61bc8216d9f'
+                        key: {
+                            sys_ui_section: {
+                                id: '57e31fa2bb9345109934ce0f371c298d'
+                                key: {
+                                    name: 'x_711398_se_cert_acquisition'
+                                    caption: 'Cert Acquisition'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: '.end_split'
+                            position: '4'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: 'b276e86b7bcf4464a312eee86b0b46d3'
+                        key: {
+                            sys_security_acl: 'fee7f2b5856741e2a05818e5dff5a8e2'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: 'b27869529a714124b53d0b29145769c2'
                         key: {
@@ -2317,6 +2898,28 @@ declare global {
                                     name: 'x_711398_se.se_admin'
                                 }
                             }
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: 'b64484c225f4437395d61c2fad2902de'
+                        key: {
+                            sys_ui_section: {
+                                id: '57e31fa2bb9345109934ce0f371c298d'
+                                key: {
+                                    name: 'x_711398_se_cert_acquisition'
+                                    caption: 'Cert Acquisition'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: 'certificate'
+                            position: '1'
                         }
                     },
                     {
@@ -2348,6 +2951,19 @@ declare global {
                             name: 'x_711398_se_skill'
                             element: 'weight'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: 'bc289390b3a44fbfade834c91539a5c4'
+                        key: {
+                            sys_security_acl: 'bcae67a6a1464b87bac57bc16b245cd2'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -2389,6 +3005,41 @@ declare global {
                             element: 'NULL'
                             relationship: 'NULL'
                             parent: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: 'be503cee42f64deebc748803b2363dd9'
+                        key: {
+                            sys_ui_section: {
+                                id: 'ef93ff79d7c74c02807b63e2d25fa3a1'
+                                key: {
+                                    name: 'x_711398_se_certificate'
+                                    caption: 'Certificate'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: 'product_line'
+                            position: '3'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: 'be6af8d9129843b69da37d6fceb13cbb'
+                        key: {
+                            sys_security_acl: '020c8cc7db774a49b29dcaef044421e1'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
                         }
                     },
                     {
@@ -2527,6 +3178,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_index'
+                        id: 'c804f543cfb84cc988b6306469d44e6d'
+                        key: {
+                            logical_table_name: 'x_711398_se_cert_acquisition'
+                            col_name_string: 'submission,certificate'
+                        }
+                    },
+                    {
                         table: 'sys_ui_element'
                         id: 'c861cf4cebbc4becb26599a01051b873'
                         key: {
@@ -2571,6 +3230,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_documentation'
+                        id: 'caa7492d37a84085922fbdca9694ba59'
+                        key: {
+                            name: 'x_711398_se_cert_acquisition'
+                            element: 'certificate'
+                            language: 'en'
+                        }
+                    },
+                    {
                         table: 'sys_ui_list'
                         id: 'cb3d4a0d6c1247b5b62a97a5b8430f4d'
                         key: {
@@ -2603,6 +3271,28 @@ declare global {
                             name: 'x_711398_se_level'
                             element: 'min_score'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: 'cdc0fb7a6f794d42b4fca449bec2e0cc'
+                        key: {
+                            sys_ui_section: {
+                                id: '57e31fa2bb9345109934ce0f371c298d'
+                                key: {
+                                    name: 'x_711398_se_cert_acquisition'
+                                    caption: 'Cert Acquisition'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: '.begin_split'
+                            position: '0'
                         }
                     },
                     {
@@ -2704,6 +3394,19 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_security_acl_role'
+                        id: 'd210f4570fb348189077a50d14d46446'
+                        key: {
+                            sys_security_acl: 'e1ac52bea5304a23ac3074c7f7e4c438'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_ui_list_element'
                         id: 'd53a0a7495274c35b63389f75b03c4cf'
                         key: {
@@ -2733,6 +3436,29 @@ declare global {
                             name: 'x_711398_se_submission'
                             element: 'score'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list_element'
+                        id: 'd9b0ed9c5975405b9065f50d0bdb1f33'
+                        key: {
+                            list_id: {
+                                id: '3bb01c449a8f4ea2b443f8189dd4fdae'
+                                key: {
+                                    name: 'x_711398_se_certificate'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'name'
                         }
                     },
                     {
@@ -2797,6 +3523,39 @@ declare global {
                         id: 'dd921e77c6f449bfb17313e8deed18b7'
                         key: {
                             name: 'x_711398_se_skill'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_form_section'
+                        id: 'dea58c4a358843298e307d2b49ec1b62'
+                        key: {
+                            sys_ui_form: {
+                                id: '0a8fee7400d64f7aa77954fe0dbc14f2'
+                                key: {
+                                    name: 'x_711398_se_certificate'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            sys_ui_section: {
+                                id: 'ef93ff79d7c74c02807b63e2d25fa3a1'
+                                key: {
+                                    name: 'x_711398_se_certificate'
+                                    caption: 'Certificate'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
                         }
                     },
                     {
@@ -2880,6 +3639,29 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_list_element'
+                        id: 'e102bdfffb9c46bf8c62d9c2dd554f75'
+                        key: {
+                            list_id: {
+                                id: '28bb75635f54414290c1e10f72171546'
+                                key: {
+                                    name: 'x_711398_se_cert_acquisition'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'certificate.product_line'
+                        }
+                    },
+                    {
                         table: 'sys_security_acl_role'
                         id: 'e234aadc76a84a66a5659886f2d79ed6'
                         key: {
@@ -2890,6 +3672,28 @@ declare global {
                                     name: 'x_711398_se.se_admin'
                                 }
                             }
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: 'e501bfd0c7494148bedccf3e4f68c214'
+                        key: {
+                            sys_ui_section: {
+                                id: 'ef93ff79d7c74c02807b63e2d25fa3a1'
+                                key: {
+                                    name: 'x_711398_se_certificate'
+                                    caption: 'Certificate'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: 'name'
+                            position: '1'
                         }
                     },
                     {
@@ -2922,6 +3726,28 @@ declare global {
                                 }
                             }
                             element: 'valid'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: 'ec53125298bb400591de4120b2ead6d3'
+                        key: {
+                            sys_ui_section: {
+                                id: 'ef93ff79d7c74c02807b63e2d25fa3a1'
+                                key: {
+                                    name: 'x_711398_se_certificate'
+                                    caption: 'Certificate'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: '.end_split'
+                            position: '4'
                         }
                     },
                     {
@@ -2984,6 +3810,74 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_section'
+                        id: 'ef93ff79d7c74c02807b63e2d25fa3a1'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                            caption: 'Certificate'
+                            view: {
+                                id: 'Default view'
+                                key: {
+                                    name: 'NULL'
+                                }
+                            }
+                            sys_domain: 'global'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_form_section'
+                        id: 'f19ac8090e88471a973d17adc5e95fc7'
+                        key: {
+                            sys_ui_form: {
+                                id: '10d22a8d39b34b2aa6f6ac12f8da8cea'
+                                key: {
+                                    name: 'x_711398_se_cert_acquisition'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            sys_ui_section: {
+                                id: '57e31fa2bb9345109934ce0f371c298d'
+                                key: {
+                                    name: 'x_711398_se_cert_acquisition'
+                                    caption: 'Cert Acquisition'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: 'f2e57768115d4ec89ec2dc5be4b8aee5'
+                        key: {
+                            sys_security_acl: '0936a921c5fd47d4a5bfbd16cfc43810'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_db_object'
+                        id: 'f37d36467c154df29facc0db81ab685f'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                        }
+                    },
+                    {
                         table: 'sys_security_acl_role'
                         id: 'f63d51ad75f1411a83f7a5e6cb9163d8'
                         key: {
@@ -2994,6 +3888,36 @@ declare global {
                                     name: 'x_711398_se.se_user'
                                 }
                             }
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: 'f68daf39187a4333bd07ef8fd66183dd'
+                        key: {
+                            name: 'x_711398_se_certificate'
+                            element: 'name'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: 'f6a57d01955445ed9e6be692444cec83'
+                        key: {
+                            sys_ui_section: {
+                                id: 'ef93ff79d7c74c02807b63e2d25fa3a1'
+                                key: {
+                                    name: 'x_711398_se_certificate'
+                                    caption: 'Certificate'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: '.begin_split'
+                            position: '0'
                         }
                     },
                     {

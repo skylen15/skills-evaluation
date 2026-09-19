@@ -47,6 +47,21 @@ Record({
 });
 
 Record({
+  $id: Now.ID["module-certificates"],
+  table: "sys_app_module",
+  data: {
+    title: "Certificates",
+    application: skillEvaluationMenu,
+    link_type: "LIST",
+    name: "x_711398_se_certificate",
+    hint: "Maintain Certificates",
+    roles: [SE_ADMIN_ROLE_NAME],
+    active: true,
+    order: 330,
+  },
+});
+
+Record({
   $id: Now.ID["module-levels"],
   table: "sys_app_module",
   data: {
@@ -57,6 +72,6 @@ Record({
     hint: "Maintain Score Level thresholds",
     roles: [SE_ADMIN_ROLE_NAME],
     active: true,
-    order: 330,
+    order: 340,
   },
 });
