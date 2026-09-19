@@ -11,3 +11,7 @@ Canonical roles map 1:1 to tracker strings: `needs-triage`, `needs-info`, `ready
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Verify
+
+Verify before calling work done: format, then lint, then test. See `docs/agents/verify.md`.
