@@ -1,0 +1,6 @@
+{
+    "scope": "x_711398_se",
+    "scopeId": "ae7a736e72d94e2ab9888d73382b0b08",
+    "name": "Skill Evaluation",
+    "tsconfigPath": "./src/server/tsconfig.json"
+}
