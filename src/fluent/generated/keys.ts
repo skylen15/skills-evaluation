@@ -387,6 +387,10 @@ declare global {
                         table: 'sys_module'
                         id: 'e58387ead6be4440a382432a0bd3a611'
                     }
+                    'src_server_submit-for-review_ts': {
+                        table: 'sys_module'
+                        id: '0a775208fe4941aba9f2a3c83a3215c8'
+                    }
                     'submission-cert-acquisition-related-list': {
                         table: 'sys_ui_related_list_entry'
                         id: 'e2f290ef46cb4a11a56a8776a9450f2e'
@@ -398,6 +402,14 @@ declare global {
                     'submission-delete-se-admin': {
                         table: 'sys_security_acl'
                         id: 'c39add822b004d2aadf4737ff5065727'
+                    }
+                    'submission-description-write-se-admin': {
+                        table: 'sys_security_acl'
+                        id: 'a5fc75ddf82e4866bfd020b61c56c8a6'
+                    }
+                    'submission-description-write-se-user-own': {
+                        table: 'sys_security_acl'
+                        id: '653130d7a82f46d8857733e0feae1964'
                     }
                     'submission-field-read': {
                         table: 'sys_security_acl'
@@ -430,6 +442,10 @@ declare global {
                     'submission-write-se-user-own': {
                         table: 'sys_security_acl'
                         id: '1171dc648ae646dba6ef7c4fa715e326'
+                    }
+                    'submit-for-review': {
+                        table: 'sys_ui_action'
+                        id: 'eca8ad8c42274843afc9ca351218af56'
                     }
                 }
                 composite: [
@@ -646,6 +662,21 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_policy_action'
+                        id: '0f40c45715774aa38a30610e36f51764'
+                        deleted: true
+                        key: {
+                            ui_policy: {
+                                id: '3f58c16dc8e14ef59e20b59e29a78ea4'
+                                key: {
+                                    table: 'x_711398_se_submission'
+                                    short_description: 'Lock Description and Work notes after leaving Draft'
+                                }
+                            }
+                            field: 'work_notes'
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: '101c0483fbe14947a5324877aad7c827'
                         key: {
@@ -809,6 +840,35 @@ declare global {
                         id: '1eb1174f989f4ba28c2e75899c2f3dff'
                         key: {
                             name: 'x_711398_se_submission'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_policy_action'
+                        id: '1fb27ff51da74d79b747bd8e1f4e8a96'
+                        key: {
+                            ui_policy: {
+                                id: 'cba23b3140394579bf126049875730ef'
+                                key: {
+                                    table: 'x_711398_se_submission'
+                                    short_description: 'Lock Description after leaving Draft'
+                                }
+                            }
+                            field: 'description'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_policy_action'
+                        id: '1fc7bcd96f9d4a46bb1402ccc4943a84'
+                        deleted: true
+                        key: {
+                            ui_policy: {
+                                id: '3f58c16dc8e14ef59e20b59e29a78ea4'
+                                key: {
+                                    table: 'x_711398_se_submission'
+                                    short_description: 'Lock Description and Work notes after leaving Draft'
+                                }
+                            }
+                            field: 'description'
                         }
                     },
                     {
@@ -1311,6 +1371,15 @@ declare global {
                                     name: 'x_711398_se.se_user'
                                 }
                             }
+                        }
+                    },
+                    {
+                        table: 'sys_ui_policy'
+                        id: '3f58c16dc8e14ef59e20b59e29a78ea4'
+                        deleted: true
+                        key: {
+                            table: 'x_711398_se_submission'
+                            short_description: 'Lock Description and Work notes after leaving Draft'
                         }
                     },
                     {
@@ -2027,6 +2096,19 @@ declare global {
                                 id: '510864fdf2b84952a7595fe5e602132e'
                                 key: {
                                     name: 'x_711398_se.se_user'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '6feb5c5a39f1494caf763ff6a0e3b15b'
+                        key: {
+                            sys_security_acl: 'a5fc75ddf82e4866bfd020b61c56c8a6'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
                                 }
                             }
                         }
@@ -3256,6 +3338,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_policy'
+                        id: 'cba23b3140394579bf126049875730ef'
+                        key: {
+                            table: 'x_711398_se_submission'
+                            short_description: 'Lock Description after leaving Draft'
+                        }
+                    },
+                    {
                         table: 'sys_documentation'
                         id: 'cda776e1af1a422485c748872ce966f3'
                         key: {
@@ -3797,6 +3887,19 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_action_role'
+                        id: 'ee1518dc510b42919bb99f5d3a8362da'
+                        key: {
+                            sys_ui_action: 'eca8ad8c42274843afc9ca351218af56'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_security_acl_role'
                         id: 'ee8c2a959cfc4900a0c847101ae531b4'
                         key: {
@@ -3964,6 +4067,19 @@ declare global {
                                 id: 'd0df25a58c524ed69caae2d2580aee5d'
                                 key: {
                                     name: 'x_711398_se.se_admin'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: 'feb4b017469d41e1b17e32c52692925c'
+                        key: {
+                            sys_security_acl: '653130d7a82f46d8857733e0feae1964'
+                            sys_user_role: {
+                                id: '510864fdf2b84952a7595fe5e602132e'
+                                key: {
+                                    name: 'x_711398_se.se_user'
                                 }
                             }
                         }

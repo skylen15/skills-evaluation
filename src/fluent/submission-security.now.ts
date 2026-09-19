@@ -2,7 +2,11 @@ import { Acl } from "@servicenow/sdk/core";
 
 import { seAdmin, seUser } from "./roles.now.ts";
 
+const DRAFT_STATE = "draft";
+
 const OWNER_SCRIPT = `answer = current.getValue('assigned_to') == gs.getUserID();`;
+
+const OWNER_DRAFT_SCRIPT = `answer = current.getValue('assigned_to') == gs.getUserID() && current.getValue('state') == '${DRAFT_STATE}';`;
 
 Acl({
   $id: Now.ID["submission-create-se-user"],
@@ -78,4 +82,25 @@ Acl({
   operation: "write",
   roles: [seUser],
   description: "Members and admins may write Submission fields the table ACL allows",
+});
+
+Acl({
+  $id: Now.ID["submission-description-write-se-admin"],
+  type: "record",
+  table: "x_711398_se_submission",
+  field: "description",
+  operation: "write",
+  roles: [seAdmin],
+  description: "PM and CoE Head may write Description",
+});
+
+Acl({
+  $id: Now.ID["submission-description-write-se-user-own"],
+  type: "record",
+  table: "x_711398_se_submission",
+  field: "description",
+  operation: "write",
+  roles: [seUser],
+  script: OWNER_DRAFT_SCRIPT,
+  description: "Members may write Description on their own Submissions only while Draft",
 });

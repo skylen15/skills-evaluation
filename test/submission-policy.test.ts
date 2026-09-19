@@ -5,6 +5,7 @@ import {
   canMutateCertAcquisitions,
   decideCertAcquisitionInsert,
   decideInsert,
+  decideSubmitForReview,
   levelForScore,
   parseCertificateId,
   parseLevelId,
@@ -230,4 +231,94 @@ test("Cert Acquisitions may be added or removed only while the Submission is Dra
   assert.equal(canMutateCertAcquisitions(SUBMISSION_STATE.SUBMITTED), false);
   assert.equal(canMutateCertAcquisitions(SUBMISSION_STATE.REVIEWED), false);
   assert.equal(canMutateCertAcquisitions(SUBMISSION_STATE.COMPLETED), false);
+});
+
+test("Draft with a Description submits to Submitted", () => {
+  const assignedTo = member("member-1");
+
+  const decision = decideSubmitForReview(
+    SUBMISSION_STATE.DRAFT,
+    "Self-assessment Q3",
+    assignedTo,
+    assignedTo,
+  );
+
+  assert.equal(decision._tag, "ok");
+
+  if (decision._tag === "ok") {
+    assert.equal(decision.value, SUBMISSION_STATE.SUBMITTED);
+  }
+});
+
+test("Draft without a Description is refused", () => {
+  const assignedTo = member("member-1");
+  const decision = decideSubmitForReview(SUBMISSION_STATE.DRAFT, "", assignedTo, assignedTo);
+
+  assert.equal(decision._tag, "err");
+
+  if (decision._tag === "err") {
+    assert.equal(decision.error._tag, "DescriptionRequired");
+  }
+});
+
+test("non-Draft submit is refused", () => {
+  const assignedTo = member("member-1");
+
+  const submitted = decideSubmitForReview(
+    SUBMISSION_STATE.SUBMITTED,
+    "Self-assessment Q3",
+    assignedTo,
+    assignedTo,
+  );
+
+  const reviewed = decideSubmitForReview(
+    SUBMISSION_STATE.REVIEWED,
+    "Self-assessment Q3",
+    assignedTo,
+    assignedTo,
+  );
+
+  const completed = decideSubmitForReview(
+    SUBMISSION_STATE.COMPLETED,
+    "Self-assessment Q3",
+    assignedTo,
+    assignedTo,
+  );
+
+  assert.equal(submitted._tag, "err");
+  assert.equal(reviewed._tag, "err");
+  assert.equal(completed._tag, "err");
+
+  if (submitted._tag === "err") {
+    assert.equal(submitted.error._tag, "SubmitNotAllowed");
+    assert.equal(submitted.error.state, SUBMISSION_STATE.SUBMITTED);
+  }
+});
+
+test("submit is allowed when Score is 0", () => {
+  const assignedTo = member("member-1");
+
+  const decision = decideSubmitForReview(
+    SUBMISSION_STATE.DRAFT,
+    "All skills Not Applicable",
+    assignedTo,
+    assignedTo,
+  );
+
+  assert.equal(decision._tag, "ok");
+});
+
+test("submit is refused when the actor is not the Assigned to Member", () => {
+  const decision = decideSubmitForReview(
+    SUBMISSION_STATE.DRAFT,
+    "Self-assessment Q3",
+    member("member-1"),
+    member("member-2"),
+  );
+
+  assert.equal(decision._tag, "err");
+
+  if (decision._tag === "err") {
+    assert.equal(decision.error._tag, "SubmitNotAssigned");
+  }
 });

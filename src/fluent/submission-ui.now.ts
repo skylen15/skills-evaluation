@@ -1,4 +1,7 @@
-import { default_view, Form, List, UiPolicy } from "@servicenow/sdk/core";
+import { default_view, Form, List, UiAction, UiPolicy } from "@servicenow/sdk/core";
+
+import { submitForReview } from "../server/submit-for-review.js";
+import { seUser } from "./roles.now.ts";
 
 Form({
   table: "x_711398_se_submission",
@@ -78,4 +81,34 @@ UiPolicy({
   reverseIfFalse: true,
   conditions: "state=draft",
   actions: [{ field: "level", visible: false }],
+});
+
+UiPolicy({
+  $id: Now.ID["lock-member-fields-after-draft"],
+  table: "x_711398_se_submission",
+  shortDescription: "Lock Description after leaving Draft",
+  onLoad: true,
+  global: true,
+  reverseIfFalse: true,
+  conditions: "state!=draft",
+  actions: [{ field: "description", readOnly: true }],
+});
+
+UiAction({
+  $id: Now.ID["submit-for-review"],
+  table: "x_711398_se_submission",
+  name: "Submit for Review",
+  actionName: "submit_for_review",
+  showInsert: false,
+  showUpdate: true,
+  hint: "Send this Draft Submission to the PM",
+  condition:
+    "current.getValue('state') == 'draft' && current.getValue('assigned_to') == gs.getUserID()",
+  form: {
+    showButton: true,
+    style: "primary",
+  },
+  roles: [seUser],
+  order: 100,
+  script: submitForReview,
 });

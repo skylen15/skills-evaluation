@@ -399,6 +399,82 @@ export class InvalidProficiencyLevel extends Error {
 }
 
 /**
+ * Refused because Description is missing.
+ */
+export class DescriptionRequired extends Error {
+  readonly _tag = "DescriptionRequired";
+
+  constructor() {
+    super("Description is required to submit");
+    this.name = "DescriptionRequired";
+  }
+}
+
+/**
+ * Refused because the Submission is not Draft.
+ */
+export class SubmitNotAllowed extends Error {
+  readonly _tag = "SubmitNotAllowed";
+
+  /** Lifecycle state that blocked submit. */
+  readonly state: SubmissionState;
+
+  /**
+   * @param state - Lifecycle state that blocked submit.
+   */
+  constructor(state: SubmissionState) {
+    super("Submit for Review is only available in Draft");
+    this.name = "SubmitNotAllowed";
+    this.state = state;
+  }
+}
+
+/**
+ * Refused because the actor is not the Assigned to Member.
+ */
+export class SubmitNotAssigned extends Error {
+  readonly _tag = "SubmitNotAssigned";
+
+  constructor() {
+    super("Only the Assigned to Member may submit for review");
+    this.name = "SubmitNotAssigned";
+  }
+}
+
+/**
+ * Decide whether a Member may submit a Submission for PM review.
+ *
+ * Score 0 is allowed. Description must be present. Only Draft may submit.
+ * Only the Assigned to Member may submit.
+ *
+ * @param state - Current Submission lifecycle state.
+ * @param description - Description from the form.
+ * @param assignedTo - Member the Submission is assigned to.
+ * @param actor - Caller attempting to submit.
+ * @returns Submitted when allowed, or a tagged refusal.
+ */
+export function decideSubmitForReview(
+  state: SubmissionState,
+  description: string,
+  assignedTo: MemberId,
+  actor: MemberId,
+): Result<SubmissionState, DescriptionRequired | SubmitNotAllowed | SubmitNotAssigned> {
+  if (actor !== assignedTo) {
+    return err(new SubmitNotAssigned());
+  }
+
+  if (state !== SUBMISSION_STATE.DRAFT) {
+    return err(new SubmitNotAllowed(state));
+  }
+
+  if (description.trim() === "") {
+    return err(new DescriptionRequired());
+  }
+
+  return ok(SUBMISSION_STATE.SUBMITTED);
+}
+
+/**
  * Parse a stored Proficiency Level.
  *
  * @param raw - The choice value from a Skill Assessment row.
