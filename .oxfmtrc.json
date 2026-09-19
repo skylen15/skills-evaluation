@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    ".agent/**",
+    ".agents/**",
+    ".claude/**",
+    ".codex/**",
+    ".continue/**",
+    ".cursor/**",
+    ".gemini/**",
+    ".now/**",
+    ".opencode/**",
+    ".pi/**",
+    ".roo/**",
+    ".scratch/**",
+    ".windsurf/**",
+    "@types/servicenow/**",
+    "dist/**",
+    "target/**",
+    "tools/oxlint/anti-slop/**",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "**/*.md"
+  ],
+  "sortImports": true
+}

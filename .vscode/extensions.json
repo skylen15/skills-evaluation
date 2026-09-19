@@ -1,5 +1,4 @@
 {
-    "recommendations": [
-        "servicenow.fluent-language-extension"
-    ]
+  "recommendations": ["oxc.oxc-vscode", "servicenow.fluent-language-extension"],
+  "unwantedRecommendations": ["esbenp.prettier-vscode"]
 }
