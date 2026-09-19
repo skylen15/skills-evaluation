@@ -1,6 +1,9 @@
 import { Record } from "@servicenow/sdk/core";
 
-import { SKILL_EVALUATION_PM_GROUP_NAME } from "../server/group-names.js";
+import {
+  SKILL_EVALUATION_COE_GROUP_NAME,
+  SKILL_EVALUATION_PM_GROUP_NAME,
+} from "../server/group-names.js";
 import { seAdmin, seUser } from "./roles.now.ts";
 
 /** Group that grants se_user to Members. */
@@ -30,7 +33,7 @@ export const skillEvaluationCoe = Record({
   $id: Now.ID["skill-evaluation-coe-group"],
   table: "sys_user_group",
   data: {
-    name: "Skill Evaluation COE",
+    name: SKILL_EVALUATION_COE_GROUP_NAME,
     description: "ECA CoE Heads who take the second approval gate",
     active: true,
   },

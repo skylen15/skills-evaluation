@@ -91,6 +91,14 @@ declare global {
                         table: 'sys_security_acl'
                         id: '0206fb7425844194a6cd7498fffbf753'
                     }
+                    'coe-approve-submission': {
+                        table: 'sys_ui_action'
+                        id: '35046450d8b44c05aac3a9d6acfcd8a4'
+                    }
+                    'coe-reject-submission': {
+                        table: 'sys_ui_action'
+                        id: 'f8eea6a97daa46debc62052537a6fbc8'
+                    }
                     'generate-skill-assessments': {
                         table: 'sys_script'
                         id: '77fa36e056684782b6adc446b218e498'
@@ -150,6 +158,10 @@ declare global {
                     'module-certificates': {
                         table: 'sys_app_module'
                         id: '6a75fd5468574daa89ca3c05930398f2'
+                    }
+                    'module-completed-submissions': {
+                        table: 'sys_app_module'
+                        id: 'afb5cfa61594405ea08d6f92cae79321'
                     }
                     'module-levels': {
                         table: 'sys_app_module'
@@ -226,6 +238,10 @@ declare global {
                     'recalculate-submission-score': {
                         table: 'sys_script'
                         id: '467e29b2730047cebdc83d408d9ceb29'
+                    }
+                    'refuse-completed-mutation': {
+                        table: 'sys_script'
+                        id: '10ea6a2de3464041aa6ae2e18e38a1b2'
                     }
                     'refuse-duplicate-cert-acquisition': {
                         table: 'sys_script'
@@ -379,6 +395,10 @@ declare global {
                         table: 'sys_module'
                         id: 'b56d5644e7c446cea30b453b38c1e90f'
                     }
+                    'src_server_refuse-completed-mutation_ts': {
+                        table: 'sys_module'
+                        id: 'be16d279bea14424a2ffa054a104b38b'
+                    }
                     'src_server_refuse-duplicate-cert-acquisition_ts': {
                         table: 'sys_module'
                         id: '1a39610c6064443d80f4bbf6d179f3bc'
@@ -410,6 +430,10 @@ declare global {
                     'src_server_submit-for-review_ts': {
                         table: 'sys_module'
                         id: '0a775208fe4941aba9f2a3c83a3215c8'
+                    }
+                    'src_server_take-coe-gate_ts': {
+                        table: 'sys_module'
+                        id: 'e84b97e1673a4fbfb712b46f055fac00'
                     }
                     'src_server_take-pm-gate_ts': {
                         table: 'sys_module'
@@ -1379,6 +1403,19 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_action_role'
+                        id: '3c485fb29f6343809498d65f2171ac85'
+                        key: {
+                            sys_ui_action: 'f8eea6a97daa46debc62052537a6fbc8'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_security_acl_role'
                         id: '3d180b237afc4bd59eb6b970e105f399'
                         key: {
@@ -2294,6 +2331,20 @@ declare global {
                         id: '7b02d421e5eb4833949b88df348fbc00'
                         key: {
                             name: 'x_711398_se_cert_acquisition'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_policy_action'
+                        id: '7b7f5517f4fe4564b93f57eedd683f95'
+                        key: {
+                            ui_policy: {
+                                id: 'c90c558c3c614a60822cbd184cdd8d26'
+                                key: {
+                                    table: 'x_711398_se_submission'
+                                    short_description: 'Lock Work notes when the Submission is Completed'
+                                }
+                            }
+                            field: 'work_notes'
                         }
                     },
                     {
@@ -3371,6 +3422,27 @@ declare global {
                             }
                             element: '.end_split'
                             position: '5'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_action_role'
+                        id: 'c884f857cdee442ca82854922148842f'
+                        key: {
+                            sys_ui_action: '35046450d8b44c05aac3a9d6acfcd8a4'
+                            sys_user_role: {
+                                id: 'd0df25a58c524ed69caae2d2580aee5d'
+                                key: {
+                                    name: 'x_711398_se.se_admin'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        table: 'sys_ui_policy'
+                        id: 'c90c558c3c614a60822cbd184cdd8d26'
+                        key: {
+                            table: 'x_711398_se_submission'
+                            short_description: 'Lock Work notes when the Submission is Completed'
                         }
                     },
                     {

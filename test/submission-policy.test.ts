@@ -3,7 +3,10 @@ import { test } from "node:test";
 
 import {
   canMutateCertAcquisitions,
+  canMutateSubmission,
+  COE_GATE_ACTION,
   decideCertAcquisitionInsert,
+  decideCoeGate,
   decideInsert,
   decidePmGate,
   decideSubmitForReview,
@@ -408,4 +411,151 @@ test("the PM gate refuses every state except Submitted", () => {
       assert.equal(decision.error._tag, "PmGateNotAvailable");
     }
   }
+});
+
+test("a CoE Head completes another Member's Reviewed Submission as Valid", () => {
+  const assignedTo = member("member-1");
+  const currentId = submission("submission-current");
+
+  const decision = decideCoeGate(
+    SUBMISSION_STATE.REVIEWED,
+    assignedTo,
+    member("coe-1"),
+    true,
+    COE_GATE_ACTION.APPROVE,
+    currentId,
+    [{ id: currentId, assignedTo, valid: false }],
+  );
+
+  assert.equal(decision._tag, "ok");
+
+  if (decision._tag === "ok") {
+    assert.equal(decision.value.state, SUBMISSION_STATE.COMPLETED);
+    assert.equal(decision.value.valid, true);
+    assert.deepEqual(decision.value.invalidate, []);
+  }
+});
+
+test("completing clears Valid on every other Valid Submission for that Member", () => {
+  const assignedTo = member("member-1");
+  const currentId = submission("submission-current");
+  const previousValid = submission("submission-previous");
+  const otherMemberValid = submission("submission-other-member");
+
+  const decision = decideCoeGate(
+    SUBMISSION_STATE.REVIEWED,
+    assignedTo,
+    member("coe-1"),
+    true,
+    COE_GATE_ACTION.APPROVE,
+    currentId,
+    [
+      { id: previousValid, assignedTo, valid: true },
+      { id: currentId, assignedTo, valid: false },
+      { id: otherMemberValid, assignedTo: member("member-2"), valid: true },
+      { id: submission("submission-not-valid"), assignedTo, valid: false },
+    ],
+  );
+
+  assert.equal(decision._tag, "ok");
+
+  if (decision._tag === "ok") {
+    assert.deepEqual(decision.value.invalidate, [previousValid]);
+  }
+});
+
+test("a CoE Head rejects another Member's Reviewed Submission back to Draft", () => {
+  const assignedTo = member("member-1");
+  const previousValid = submission("submission-previous");
+
+  const decision = decideCoeGate(
+    SUBMISSION_STATE.REVIEWED,
+    assignedTo,
+    member("coe-1"),
+    true,
+    COE_GATE_ACTION.REJECT,
+    submission("submission-current"),
+    [{ id: previousValid, assignedTo, valid: true }],
+  );
+
+  assert.equal(decision._tag, "ok");
+
+  if (decision._tag === "ok") {
+    assert.equal(decision.value.state, SUBMISSION_STATE.DRAFT);
+    assert.equal(decision.value.valid, false);
+    assert.deepEqual(decision.value.invalidate, []);
+  }
+});
+
+test("the Assigned to user cannot take the CoE Head gate even when they are a CoE Head", () => {
+  const assignedTo = member("coe-1");
+
+  const decision = decideCoeGate(
+    SUBMISSION_STATE.REVIEWED,
+    assignedTo,
+    assignedTo,
+    true,
+    COE_GATE_ACTION.APPROVE,
+    submission("submission-current"),
+    [],
+  );
+
+  assert.equal(decision._tag, "err");
+
+  if (decision._tag === "err") {
+    assert.equal(decision.error._tag, "CoeSelfReviewNotAllowed");
+  }
+});
+
+test("a user outside Skill Evaluation COE cannot take the CoE Head gate", () => {
+  const decision = decideCoeGate(
+    SUBMISSION_STATE.REVIEWED,
+    member("member-1"),
+    member("pm-1"),
+    false,
+    COE_GATE_ACTION.APPROVE,
+    submission("submission-current"),
+    [],
+  );
+
+  assert.equal(decision._tag, "err");
+
+  if (decision._tag === "err") {
+    assert.equal(decision.error._tag, "CoeMembershipRequired");
+  }
+});
+
+test("the CoE Head gate refuses every state except Reviewed", () => {
+  const assignedTo = member("member-1");
+  const actor = member("coe-1");
+  const currentId = submission("submission-current");
+
+  for (const state of [
+    SUBMISSION_STATE.DRAFT,
+    SUBMISSION_STATE.SUBMITTED,
+    SUBMISSION_STATE.COMPLETED,
+  ]) {
+    const decision = decideCoeGate(
+      state,
+      assignedTo,
+      actor,
+      true,
+      COE_GATE_ACTION.APPROVE,
+      currentId,
+      [],
+    );
+
+    assert.equal(decision._tag, "err");
+
+    if (decision._tag === "err") {
+      assert.equal(decision.error._tag, "CoeGateNotAvailable");
+    }
+  }
+});
+
+test("a Completed Submission cannot be edited, including Work notes", () => {
+  assert.equal(canMutateSubmission(SUBMISSION_STATE.DRAFT), true);
+  assert.equal(canMutateSubmission(SUBMISSION_STATE.SUBMITTED), true);
+  assert.equal(canMutateSubmission(SUBMISSION_STATE.REVIEWED), true);
+  assert.equal(canMutateSubmission(SUBMISSION_STATE.COMPLETED), false);
 });

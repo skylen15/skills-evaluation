@@ -567,6 +567,185 @@ export function decidePmGate(
 }
 
 /**
+ * Second-gate actions available to a CoE Head.
+ */
+export const COE_GATE_ACTION = {
+  APPROVE: "approve",
+  REJECT: "reject",
+} as const;
+
+/**
+ * A second-gate CoE Head action.
+ */
+export type CoeGateAction = (typeof COE_GATE_ACTION)[keyof typeof COE_GATE_ACTION];
+
+/**
+ * Plain snapshot of Valid on a stored Submission, used when completing.
+ */
+export type ValidSubmissionSnapshot = {
+  /** Sys id of the Submission. */
+  readonly id: SubmissionId;
+
+  /** Member the Submission is assigned to. */
+  readonly assignedTo: MemberId;
+
+  /** Whether this Submission is currently the official result. */
+  readonly valid: boolean;
+};
+
+/**
+ * Next state, Valid flag, and sibling Valid rows to clear after a CoE gate action.
+ */
+export type CoeGateOutcome = {
+  /** Lifecycle state after the gate action. */
+  readonly state: SubmissionState;
+
+  /** Whether this Submission is the official result after the action. */
+  readonly valid: boolean;
+
+  /** Other Valid Submissions for this member that must be cleared. */
+  readonly invalidate: ReadonlyArray<SubmissionId>;
+};
+
+/**
+ * Refused because the actor is not a member of Skill Evaluation COE.
+ */
+export class CoeMembershipRequired extends Error {
+  readonly _tag = "CoeMembershipRequired";
+
+  constructor() {
+    super("Only a member of Skill Evaluation COE may take the CoE Head gate");
+    this.name = "CoeMembershipRequired";
+  }
+}
+
+/**
+ * Refused because the Submission is not waiting at the CoE Head gate.
+ */
+export class CoeGateNotAvailable extends Error {
+  readonly _tag = "CoeGateNotAvailable";
+
+  /** Lifecycle state that blocked the CoE Head gate. */
+  readonly state: SubmissionState;
+
+  /**
+   * @param state - Lifecycle state that blocked the CoE Head gate.
+   */
+  constructor(state: SubmissionState) {
+    super("CoE Head approval and rejection are only available on Reviewed");
+    this.name = "CoeGateNotAvailable";
+    this.state = state;
+  }
+}
+
+/**
+ * Refused because a CoE Head cannot review their own Submission.
+ */
+export class CoeSelfReviewNotAllowed extends Error {
+  readonly _tag = "CoeSelfReviewNotAllowed";
+
+  constructor() {
+    super("A CoE Head cannot approve or reject a Submission assigned to themselves");
+    this.name = "CoeSelfReviewNotAllowed";
+  }
+}
+
+/**
+ * Collect other currently Valid Submissions for the same member.
+ *
+ * @param assignedTo - Member whose official result is being replaced.
+ * @param currentId - Submission being completed; it is never invalidated.
+ * @param existing - Stored Valid flags for Submissions in view of this decision.
+ * @returns Sys ids of sibling Valid Submissions to clear.
+ */
+function siblingValidIds(
+  assignedTo: MemberId,
+  currentId: SubmissionId,
+  existing: ReadonlyArray<ValidSubmissionSnapshot>,
+): ReadonlyArray<SubmissionId> {
+  const invalidate: SubmissionId[] = [];
+
+  for (const snapshot of existing) {
+    if (!snapshot.valid) {
+      continue;
+    }
+
+    if (snapshot.assignedTo !== assignedTo) {
+      continue;
+    }
+
+    if (snapshot.id === currentId) {
+      continue;
+    }
+
+    invalidate.push(snapshot.id);
+  }
+
+  return invalidate;
+}
+
+/**
+ * Decide the second approval gate for a Reviewed Submission.
+ *
+ * Approve completes this Submission as Valid and clears Valid on every other
+ * Valid Submission for that Assigned to. Reject returns Draft and leaves Valid false.
+ *
+ * @param state - Current Submission lifecycle state.
+ * @param assignedTo - Member the Submission is assigned to.
+ * @param actor - Caller attempting to take the gate.
+ * @param isCoe - Whether the caller belongs to Skill Evaluation COE.
+ * @param action - Approve to Completed, or reject back to Draft.
+ * @param currentId - Sys id of the Submission at the gate.
+ * @param existing - Valid flags for Submissions considered when completing.
+ * @returns The next state and Valid outcome when allowed, or a tagged refusal.
+ */
+export function decideCoeGate(
+  state: SubmissionState,
+  assignedTo: MemberId,
+  actor: MemberId,
+  isCoe: boolean,
+  action: CoeGateAction,
+  currentId: SubmissionId,
+  existing: ReadonlyArray<ValidSubmissionSnapshot>,
+): Result<CoeGateOutcome, CoeMembershipRequired | CoeGateNotAvailable | CoeSelfReviewNotAllowed> {
+  if (!isCoe) {
+    return err(new CoeMembershipRequired());
+  }
+
+  if (state !== SUBMISSION_STATE.REVIEWED) {
+    return err(new CoeGateNotAvailable(state));
+  }
+
+  if (actor === assignedTo) {
+    return err(new CoeSelfReviewNotAllowed());
+  }
+
+  if (action === COE_GATE_ACTION.REJECT) {
+    return ok({
+      state: SUBMISSION_STATE.DRAFT,
+      valid: false,
+      invalidate: [],
+    });
+  }
+
+  return ok({
+    state: SUBMISSION_STATE.COMPLETED,
+    valid: true,
+    invalidate: siblingValidIds(assignedTo, currentId, existing),
+  });
+}
+
+/**
+ * Whether a Submission record may still be edited, including Work notes.
+ *
+ * @param state - Current Submission lifecycle state.
+ * @returns False when the Submission is Completed.
+ */
+export function canMutateSubmission(state: SubmissionState): boolean {
+  return state !== SUBMISSION_STATE.COMPLETED;
+}
+
+/**
  * Parse a stored Proficiency Level.
  *
  * @param raw - The choice value from a Skill Assessment row.

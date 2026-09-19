@@ -1,6 +1,7 @@
 import { BusinessRule } from "@servicenow/sdk/core";
 
 import { generateSkillAssessments } from "../server/generate-skill-assessments.js";
+import { refuseCompletedMutation } from "../server/refuse-completed-mutation.js";
 import { refuseInProgressInsert } from "../server/refuse-in-progress-insert.js";
 import { restrictMemberSubmissionQuery } from "../server/restrict-member-submission-query.js";
 
@@ -39,4 +40,16 @@ BusinessRule({
   active: true,
   script: generateSkillAssessments,
   description: "Create one Skill Assessment per Skill when a Submission is first inserted",
+});
+
+BusinessRule({
+  $id: Now.ID["refuse-completed-mutation"],
+  name: "Refuse Completed mutation",
+  table: "x_711398_se_submission",
+  when: "before",
+  action: ["update"],
+  order: 100,
+  active: true,
+  script: refuseCompletedMutation,
+  description: "Refuse edits to a Completed Submission, including Work notes",
 });

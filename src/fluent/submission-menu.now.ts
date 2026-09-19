@@ -72,3 +72,19 @@ Record({
     order: 220,
   },
 });
+
+Record({
+  $id: Now.ID["module-completed-submissions"],
+  table: "sys_app_module",
+  data: {
+    title: "Completed",
+    application: skillEvaluationMenu,
+    link_type: "FILTER",
+    name: "x_711398_se_submission",
+    filter: "state=completed",
+    hint: "Completed Skill Evaluation Submissions",
+    roles: [SE_ADMIN_ROLE_NAME],
+    active: true,
+    order: 230,
+  },
+});

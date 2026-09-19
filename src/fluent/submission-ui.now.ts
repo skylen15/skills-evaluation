@@ -1,7 +1,11 @@
 import { default_view, Form, List, UiAction, UiPolicy } from "@servicenow/sdk/core";
 
-import { SKILL_EVALUATION_PM_GROUP_NAME } from "../server/group-names.js";
+import {
+  SKILL_EVALUATION_COE_GROUP_NAME,
+  SKILL_EVALUATION_PM_GROUP_NAME,
+} from "../server/group-names.js";
 import { submitForReview } from "../server/submit-for-review.js";
+import { approveAtCoeGate, rejectAtCoeGate } from "../server/take-coe-gate.js";
 import { approveAtPmGate, rejectAtPmGate } from "../server/take-pm-gate.js";
 import { seAdmin, seUser } from "./roles.now.ts";
 
@@ -96,6 +100,17 @@ UiPolicy({
   actions: [{ field: "description", readOnly: true }],
 });
 
+UiPolicy({
+  $id: Now.ID["lock-completed-submission"],
+  table: "x_711398_se_submission",
+  shortDescription: "Lock Work notes when the Submission is Completed",
+  onLoad: true,
+  global: true,
+  reverseIfFalse: true,
+  conditions: "state=completed",
+  actions: [{ field: "work_notes", readOnly: true }],
+});
+
 UiAction({
   $id: Now.ID["submit-for-review"],
   table: "x_711398_se_submission",
@@ -153,4 +168,44 @@ UiAction({
   roles: [seAdmin],
   order: 210,
   script: rejectAtPmGate,
+});
+
+const COE_GATE_CONDITION = `current.getValue('state') == 'reviewed' &&
+current.getValue('assigned_to') != gs.getUserID() &&
+gs.getUser().isMemberOf('${SKILL_EVALUATION_COE_GROUP_NAME}')`;
+
+UiAction({
+  $id: Now.ID["coe-approve-submission"],
+  table: "x_711398_se_submission",
+  name: "Approve",
+  actionName: "coe_approve_submission",
+  showInsert: false,
+  showUpdate: true,
+  hint: "Complete this Reviewed Submission as the official result",
+  condition: COE_GATE_CONDITION,
+  form: {
+    showButton: true,
+    style: "primary",
+  },
+  roles: [seAdmin],
+  order: 300,
+  script: approveAtCoeGate,
+});
+
+UiAction({
+  $id: Now.ID["coe-reject-submission"],
+  table: "x_711398_se_submission",
+  name: "Reject",
+  actionName: "coe_reject_submission",
+  showInsert: false,
+  showUpdate: true,
+  hint: "Return this Reviewed Submission to Draft",
+  condition: COE_GATE_CONDITION,
+  form: {
+    showButton: true,
+    style: "unstyled",
+  },
+  roles: [seAdmin],
+  order: 310,
+  script: rejectAtCoeGate,
 });
