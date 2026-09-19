@@ -1,4 +1,6 @@
-import { GlideRecord, gs } from "@servicenow/glide";
+import { GlideRecord } from "@servicenow/glide";
+
+import { applySubmissionScoreAndLevel } from "./recalculate-submission-score.ts";
 
 const SKILL_TABLE = "x_711398_se_skill";
 
@@ -31,77 +33,9 @@ export function generateSkillAssessments(current: GlideRecord, _previous: GlideR
     grAssessment.setValue("submission", submissionId);
     grAssessment.setValue("skill", grSkill.getUniqueValue());
     grAssessment.setValue("proficiency_level", PROFICIENCY_NOT_APPLICABLE);
+    grAssessment.setWorkflow(false);
     grAssessment.insert();
   }
-}
 
-/**
- * Refuse a Skill Assessment insert once the Submission already has one row per Skill.
- *
- * Type: Business Rule
- * Target table: x_711398_se_skill_assessment
- * ES mode: ES2022 (sys_module)
- * Script context: current, previous
- *
- * @param current - The Skill Assessment being inserted.
- * @param _previous - Unused; insert has no previous row.
- */
-export function refuseExtraSkillAssessmentInsert(
-  current: GlideRecord,
-  _previous: GlideRecord,
-): void {
-  const skillCount = countRows(SKILL_TABLE);
-  const existingCount = countAssessmentsForSubmission(current.getValue("submission"));
-
-  if (existingCount >= skillCount) {
-    gs.addErrorMessage("Skill Assessments cannot be added");
-    current.setAbortAction(true);
-  }
-}
-
-/**
- * Count rows on a table, bounded so the query cannot scan without limit.
- *
- * GlideRecord is required because this Business Rule must know how many Skills
- * exist before deciding whether another Skill Assessment may be inserted.
- *
- * @param table - Table to count.
- * @returns How many rows were returned within the bound.
- */
-function countRows(table: string): number {
-  const grTable = new GlideRecord(table);
-  grTable.setLimit(MAX_SKILLS);
-  grTable.query();
-
-  let count = 0;
-
-  while (grTable.next()) {
-    count += 1;
-  }
-
-  return count;
-}
-
-/**
- * Count Skill Assessments already stored for one Submission.
- *
- * GlideRecord is required because this Business Rule must count sibling rows
- * on the same table before the insert commits.
- *
- * @param submissionId - Submission sys id on the new Skill Assessment.
- * @returns How many Skill Assessments already exist for that Submission.
- */
-function countAssessmentsForSubmission(submissionId: string): number {
-  const grAssessment = new GlideRecord(SKILL_ASSESSMENT_TABLE);
-  grAssessment.addQuery("submission", submissionId);
-  grAssessment.setLimit(MAX_SKILLS);
-  grAssessment.query();
-
-  let count = 0;
-
-  while (grAssessment.next()) {
-    count += 1;
-  }
-
-  return count;
+  applySubmissionScoreAndLevel(submissionId);
 }

@@ -1,7 +1,7 @@
 import { BusinessRule } from "@servicenow/sdk/core";
 
-import { refuseExtraSkillAssessmentInsert } from "../server/generate-skill-assessments.js";
 import { recalculateSubmissionScore } from "../server/recalculate-submission-score.js";
+import { refuseExtraSkillAssessmentInsert } from "../server/refuse-extra-skill-assessment-insert.js";
 import { restrictMemberSkillAssessmentQuery } from "../server/restrict-member-skill-assessment-query.js";
 
 BusinessRule({
@@ -13,7 +13,7 @@ BusinessRule({
   order: 100,
   active: true,
   script: refuseExtraSkillAssessmentInsert,
-  description: "Refuse adding a Skill Assessment once the generated set is complete",
+  description: "Refuse adding a Skill Assessment; the generated set is complete",
 });
 
 BusinessRule({
@@ -21,11 +21,11 @@ BusinessRule({
   name: "Recalculate Submission Score",
   table: "x_711398_se_skill_assessment",
   when: "after",
-  action: ["insert", "update"],
+  action: ["insert", "update", "delete"],
   order: 100,
   active: true,
   script: recalculateSubmissionScore,
-  description: "Update Submission Score and Level when Proficiency Level changes",
+  description: "Update Submission Score and Level when Skill Assessments change",
 });
 
 BusinessRule({

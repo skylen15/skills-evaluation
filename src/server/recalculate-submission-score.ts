@@ -1,4 +1,4 @@
-import { GlideRecord } from "@servicenow/glide";
+import { GlideRecord, gs } from "@servicenow/glide";
 
 import {
   levelForScore,
@@ -25,13 +25,33 @@ const MAX_ROWS = 500;
  * ES mode: ES2022 (sys_module)
  * Script context: current, previous
  *
- * @param current - The Skill Assessment that was just saved.
- * @param _previous - Unused; Score is always recomputed from every sibling row.
+ * @param current - The Skill Assessment that was just saved or deleted.
+ * @param _previous - Unused; Score is always recomputed from every remaining sibling row.
  */
 export function recalculateSubmissionScore(current: GlideRecord, _previous: GlideRecord): void {
-  const submissionId = current.getValue("submission");
-  const score = scoreFromAssessments(loadAssessments(submissionId));
-  const levelId = levelForScore(score, loadLevelThresholds());
+  applySubmissionScoreAndLevel(current.getValue("submission"));
+}
+
+/**
+ * Write Score and Level on a Submission from its current Skill Assessments.
+ *
+ * @param submissionId - Parent Submission sys id.
+ */
+export function applySubmissionScoreAndLevel(submissionId: string): void {
+  const assessments = loadAssessments(submissionId);
+
+  if (assessments === undefined) {
+    return;
+  }
+
+  const thresholds = loadLevelThresholds();
+
+  if (thresholds === undefined) {
+    return;
+  }
+
+  const score = scoreFromAssessments(assessments);
+  const levelId = levelForScore(score, thresholds);
   const grSubmission = new GlideRecord(SUBMISSION_TABLE);
 
   if (!grSubmission.get(submissionId)) {
@@ -57,9 +77,9 @@ export function recalculateSubmissionScore(current: GlideRecord, _previous: Glid
  * only the row that triggered this Business Rule.
  *
  * @param submissionId - Parent Submission sys id.
- * @returns Snapshots. Skill Weight is unused; adapters pass 0.
+ * @returns Snapshots, or undefined when a stored Proficiency Level cannot be parsed.
  */
-function loadAssessments(submissionId: string): ReadonlyArray<SkillAssessmentSnapshot> {
+function loadAssessments(submissionId: string): ReadonlyArray<SkillAssessmentSnapshot> | undefined {
   const grAssessment = new GlideRecord(SKILL_ASSESSMENT_TABLE);
   grAssessment.addQuery("submission", submissionId);
   grAssessment.setLimit(MAX_ROWS);
@@ -69,10 +89,15 @@ function loadAssessments(submissionId: string): ReadonlyArray<SkillAssessmentSna
 
   while (grAssessment.next()) {
     const proficiency = parseProficiencyLevel(grAssessment.getValue("proficiency_level"));
-    const proficiencyValue = proficiency._tag === "ok" ? proficiency.value : 0;
+
+    if (proficiency._tag === "err") {
+      gs.warn("Skipping Score update: unknown Proficiency Level {0}", proficiency.error.raw);
+
+      return undefined;
+    }
 
     assessments.push({
-      proficiency: proficiencyValue,
+      proficiency: proficiency.value,
       skillWeight: 0,
     });
   }
@@ -86,9 +111,9 @@ function loadAssessments(submissionId: string): ReadonlyArray<SkillAssessmentSna
  * GlideRecord is required because Level rows live on the Level table and are
  * maintained by se_admin rather than hardcoded in this adapter.
  *
- * @returns Snapshots of every Level min-score row.
+ * @returns Snapshots, or undefined when a Level row cannot be parsed.
  */
-function loadLevelThresholds(): ReadonlyArray<LevelThresholdSnapshot> {
+function loadLevelThresholds(): ReadonlyArray<LevelThresholdSnapshot> | undefined {
   const grLevel = new GlideRecord(LEVEL_TABLE);
   grLevel.setLimit(MAX_ROWS);
   grLevel.query();
@@ -99,13 +124,17 @@ function loadLevelThresholds(): ReadonlyArray<LevelThresholdSnapshot> {
     const id = parseLevelId(grLevel.getUniqueValue());
 
     if (id._tag === "err") {
-      continue;
+      gs.warn("Skipping Score update: Level row has an empty sys id");
+
+      return undefined;
     }
 
     const minScore = Number.parseInt(grLevel.getValue("min_score"), 10);
 
     if (Number.isNaN(minScore)) {
-      continue;
+      gs.warn("Skipping Score update: Level {0} has a non-numeric min score", id.value);
+
+      return undefined;
     }
 
     thresholds.push({

@@ -85,12 +85,9 @@ Form({
           layout: "two-column",
           leftElements: [
             { field: "skill", type: "table_field" },
-            { field: "skill.description", type: "table_field" },
-          ],
-          rightElements: [
             { field: "skill.product_line", type: "table_field" },
-            { field: "proficiency_level", type: "table_field" },
           ],
+          rightElements: [{ field: "proficiency_level", type: "table_field" }],
         },
       ],
     },
@@ -100,7 +97,7 @@ Form({
 List({
   table: "x_711398_se_skill_assessment",
   view: default_view,
-  columns: ["skill", "skill.description", "skill.product_line", "proficiency_level"],
+  columns: ["skill", "skill.product_line", "proficiency_level"],
 });
 
 UiPolicy({
@@ -112,8 +109,6 @@ UiPolicy({
   reverseIfFalse: false,
   actions: [
     { field: "skill", readOnly: true },
-    { field: "skill.description", readOnly: true },
-    { field: "skill.product_line", readOnly: true },
     { field: "submission", readOnly: true },
   ],
 });
