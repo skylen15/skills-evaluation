@@ -37,12 +37,8 @@ export function submitForReview(current: GlideRecord): void {
     return;
   }
 
-  const decision = decideSubmitForReview(
-    state.value,
-    current.getValue("description"),
-    assignedTo.value,
-    actor.value,
-  );
+  const description = current.getValue("description") ?? "";
+  const decision = decideSubmitForReview(state.value, description, assignedTo.value, actor.value);
 
   if (decision._tag === "err") {
     gs.addErrorMessage(decision.error.message);
