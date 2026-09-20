@@ -1,0 +1,3 @@
+# Requirement acceptance boundaries
+
+The full Skills and Certificates Reference Catalog is mandatory, so demo seed data does not close that requirement; the original spreadsheets must be added as its authoritative source. The Cert Acquisition schema retains Certification number, Certified date, and ServiceNow release from the source ERD. SE Dashboard/reporting is not mandatory because the source gives no acceptance criteria. Advanced Workflow/Flow Designer is intentionally excluded and UI Actions remain the approval mechanism. Advanced notifications cover creation, both gate handoffs, and rejection at either gate, with recipients determined by the assigned Member and the active members of the group owning the next gate.

@@ -33,7 +33,7 @@ One Proficiency Level for one Skill on one Submission. The list is generated wit
 _Avoid_: skill row, rating record
 
 **Cert Acquisition**:
-One Certificate claimed on one Submission. Certificates on a Submission must be unique. A member may add or remove them only while the Submission is Draft.
+One Certificate claimed on one Submission, carrying its Certification number, Certified date, and ServiceNow release. Certificates on a Submission must be unique; a Member may add or remove claims only while the Submission is Draft.
 _Avoid_: cert, certification record
 
 **Skill**:
@@ -67,3 +67,15 @@ _Avoid_: active, current, latest (unless speaking loosely)
 **In-progress Submission**:
 A Submission whose state is not Completed. A member may not create another Submission while one is in progress.
 _Avoid_: open, active, draft-or-submitted (Draft, Submitted, and Reviewed all count)
+
+**Work notes**:
+The review journal and only user-editable Submission field after Draft. A Member, PM, or CoE Head who can read the Submission may add entries while it is Draft, Submitted, or Reviewed; Completed makes the journal read-only.
+_Avoid_: comments, notes
+
+**Lifecycle notification**:
+An email caused by creation or a gate transition. Creation and either rejection notify the assigned Member; submission notifies active Skill Evaluation PM group members; PM approval notifies active Skill Evaluation COE group members.
+_Avoid_: role notification, approver email
+
+**Reference Catalog**:
+The authoritative full set of Product Lines, Skills, and Certificates supplied by the original Skills and Certificates spreadsheets. Demo seed records do not constitute the Reference Catalog.
+_Avoid_: seed data, demo catalog
