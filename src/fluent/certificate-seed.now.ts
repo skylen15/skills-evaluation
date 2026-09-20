@@ -9,7 +9,7 @@ import {
 // Record.table accepts a table name, not the object returned by Table().
 const CERTIFICATE_TABLE = "x_711398_se_certificate";
 
-Record({
+export const certificateSystemAdministrator = Record({
   $id: Now.ID["certificate-system-administrator"],
   table: CERTIFICATE_TABLE,
   data: {
@@ -18,7 +18,7 @@ Record({
   },
 });
 
-Record({
+export const certificateApplicationDeveloper = Record({
   $id: Now.ID["certificate-application-developer"],
   table: CERTIFICATE_TABLE,
   data: {
