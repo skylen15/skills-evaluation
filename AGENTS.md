@@ -15,3 +15,7 @@ Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/age
 ### Verify
 
 Verify before calling work done: format, then lint, then typecheck, then test, then build. See `docs/agents/verify.md`.
+
+### Testing & Debugging
+
+For test execution strategy (unit test vs instance ATF), CLI log inspection, and the local fast feedback loop, see `docs/testing-and-debugging.md`.

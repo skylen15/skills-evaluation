@@ -100,6 +100,32 @@ Follow the review standards and routing defined in CODING_STANDARDS.md.
 ```
 
 ---
+## Testing & Local Iteration (Fast Feedback Loop)
+
+This project supports a **Two-Tier Testing Strategy** and a terminal-first **Fast Feedback Loop** to run and fix tests from local without relying on browser UI:
+
+1. **Tier 1: Local Unit Tests (~120ms)**:
+   ```bash
+   pnpm test
+   ```
+2. **Tier 2: Instance ATF Suite Run (ServiceNow Instance)**:
+   ```bash
+   pnpm test:atf
+   ```
+3. **Tier 2b: Single ATF Test Run (Fast loop during bug fixing)**:
+   ```bash
+   npx now-sdk cicd test run -a pdi-kl-o2 --test-name "<Test Name>"
+   ```
+4. **View failure details & logs via CLI**:
+   ```bash
+   npx now-sdk cicd testsuite result --result-id <result-id> -a pdi-kl-o2
+   npx now-sdk cicd test logs --result-id <test-result-id> -a pdi-kl-o2
+   ```
+
+For the complete step-by-step debug and fix guide, see the [Testing & Debugging Runbook](./docs/testing-and-debugging.md).
+
+---
+
 
 ## License
 

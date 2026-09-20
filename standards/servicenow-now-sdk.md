@@ -80,3 +80,4 @@ The platform Jelly engine interprets `${...}` syntax as a server-side variable e
 - **Local-first verification**: Test server logic and transformations in Node using dependency injection or lightweight query doubles before deploying to an instance.
 - **Read-only live inspection**: Commands like `sn table query` or `sn script search` are safe to run for grounding.
 - **Mutation gate**: Any state-mutating command (`sn script run`, `sn record create|update|delete`, `now-sdk install`, or deployer runs) requires explicit user approval and a preview of the script or payload.
+- **Operational runbook**: For CLI commands, test execution strategies (Unit vs ATF), and the terminal-first Fast Feedback Loop, see [`docs/testing-and-debugging.md`](../docs/testing-and-debugging.md).

@@ -11,6 +11,7 @@ A centralized standards router and decision baseline for engineering work in thi
 | writing, modifying, or reviewing TypeScript code, domain models, error handling, schemas, or testing | [`standards/typescript.md`](./standards/typescript.md) | In-repo standard |
 | working with ServiceNow Now SDK, Fluent metadata, TypeScript server modules, SPA hosting, Jelly safety, or BFF endpoints | [`standards/servicenow-now-sdk.md`](./standards/servicenow-now-sdk.md) | In-repo standard |
 | authoring platform-native Business Rules, Client Scripts, Flow actions, ACLs, Script Includes, Catalog, or database queries | `skill://sn-standards` (`core.md`, `scripting.md`, `data.md`, `security.md`, `automation.md`, `client.md`) | Global agent skill |
+| running tests, debugging ATF suites on ServiceNow, or using the local fast feedback loop | [`docs/testing-and-debugging.md`](./docs/testing-and-debugging.md) | Operational runbook |
 
 ## Shared decision priority
 
