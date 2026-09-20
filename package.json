@@ -15,7 +15,14 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "test": "node --test test/**/*.test.ts",
-    "typecheck": "tsc --noEmit -p src/server/tsconfig.json"
+    "test:atf": "now-sdk cicd testsuite run -a pdi-kl-o2 --test-suite-name \"Skill Evaluation\"",
+    "typecheck": "tsc --noEmit -p src/server/tsconfig.json",
+    "ci:build": "now-sdk build --frozenKeys",
+    "ci:install": "now-sdk install",
+    "ci:testsuite": "now-sdk cicd testsuite run --test-suite-name \"Skill Evaluation\"",
+    "ci:publish": "now-sdk cicd publish",
+    "ci:promote": "now-sdk cicd install",
+    "ci:rollback": "now-sdk cicd rollback"
   },
   "devDependencies": {
     "@oxlint/plugins": "1.83.0",

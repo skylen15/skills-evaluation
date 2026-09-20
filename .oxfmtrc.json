@@ -15,6 +15,7 @@
     ".scratch/**",
     ".windsurf/**",
     "@types/servicenow/**",
+    "src/fluent/generated/**",
     "dist/**",
     "target/**",
     "tools/oxlint/anti-slop/**",
