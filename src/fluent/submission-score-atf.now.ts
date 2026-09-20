@@ -89,10 +89,30 @@ export const testSubmissionScore = Test(
                 grFirst.update();
               }
 
-              // Reload submission: expected 4 + 3 = 7
+              // Reload submission: expected 4 + 3 = 7, Level is empty (< 15)
               expect(grSubmission.get(submissionId)).toBe(true);
               expect(parseInt(grSubmission.getValue("score"), 10)).toBe(7);
-            });
+              expect(grSubmission.getValue("level")).toBe("");
+
+              // Cross Elementary threshold (min_score: 15) by rating more assessments
+              // 4 assessments at 4 (Guru) = 16 points >= 15
+              for (var i = 0; i < 4 && i < assessmentIds.length; i++) {
+                var grItem = new GlideRecord(SKILL_ASSESSMENT_TABLE);
+                if (grItem.get(assessmentIds[i])) {
+                  grItem.setValue("proficiency_level", "4");
+                  grItem.update();
+                }
+              }
+
+              expect(grSubmission.get(submissionId)).toBe(true);
+              var finalScore = parseInt(grSubmission.getValue("score"), 10);
+              expect(finalScore).toBeGreaterThanOrEqual(15);
+
+              var levelId = grSubmission.getValue("level");
+              expect(levelId).not.toBe("");
+              var grLevel = new GlideRecord("x_711398_se_level");
+              expect(grLevel.get(levelId)).toBe(true);
+              expect(grLevel.getValue("name")).toBe("Elementary");
           });
         })(outputs, steps, params, stepResult, assertEqual);
         jasmine.getEnv().execute();
