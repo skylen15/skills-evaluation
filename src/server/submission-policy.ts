@@ -11,6 +11,17 @@ export const SUBMISSION_STATE = {
 } as const;
 
 /**
+ * Lifecycle event names fired for notifications.
+ */
+export const SUBMISSION_EVENTS = {
+  CREATED: "x_711398_se.submission.created",
+  SUBMITTED: "x_711398_se.submission.submitted",
+  PM_APPROVED: "x_711398_se.submission.pm_approved",
+  PM_REJECTED: "x_711398_se.submission.pm_rejected",
+  COE_REJECTED: "x_711398_se.submission.coe_rejected",
+} as const;
+
+/**
  * A Submission lifecycle state.
  */
 export type SubmissionState = (typeof SUBMISSION_STATE)[keyof typeof SUBMISSION_STATE];
@@ -743,6 +754,81 @@ export function decideCoeGate(
  */
 export function canMutateSubmission(state: SubmissionState): boolean {
   return state !== SUBMISSION_STATE.COMPLETED;
+}
+
+/**
+ * Whether non-Work-notes fields on a Submission may still be edited by users.
+ *
+ * @param state - Current Submission lifecycle state.
+ * @returns True only when the Submission is Draft.
+ */
+export function canMutateDraftFields(state: SubmissionState): boolean {
+  return state === SUBMISSION_STATE.DRAFT;
+}
+
+/**
+ * Refused because post-submit fields (Description, etc.) cannot be edited outside Draft.
+ */
+export class PostSubmitMutationRefused extends Error {
+  readonly _tag = "PostSubmitMutationRefused";
+
+  constructor() {
+    super("Only Work notes may be updated on a submitted or reviewed Submission");
+    this.name = "PostSubmitMutationRefused";
+  }
+}
+
+/**
+ * Refused because direct state transitions without an authorized action are prohibited.
+ */
+export class DirectStateChangeRefused extends Error {
+  readonly _tag = "DirectStateChangeRefused";
+
+  constructor() {
+    super("Direct state changes are not allowed; use the appropriate gate action");
+    this.name = "DirectStateChangeRefused";
+  }
+}
+
+/**
+ * Refused because direct valid changes without CoE approval are prohibited.
+ */
+export class DirectValidChangeRefused extends Error {
+  readonly _tag = "DirectValidChangeRefused";
+
+  constructor() {
+    super("Direct changes to Valid are not allowed");
+    this.name = "DirectValidChangeRefused";
+  }
+}
+
+/**
+ * Decide whether a Submission update is permitted.
+ */
+export function decideSubmissionUpdate(
+  previousState: SubmissionState,
+  descriptionChanged: boolean,
+  stateChanged: boolean,
+  validChanged: boolean,
+  isGateOrLifecycleAction: boolean,
+): Result<void, PostSubmitMutationRefused | DirectStateChangeRefused | DirectValidChangeRefused> {
+  if (previousState === SUBMISSION_STATE.COMPLETED) {
+    return err(new PostSubmitMutationRefused());
+  }
+
+  if (stateChanged && !isGateOrLifecycleAction) {
+    return err(new DirectStateChangeRefused());
+  }
+
+  if (validChanged && !isGateOrLifecycleAction) {
+    return err(new DirectValidChangeRefused());
+  }
+
+  if (previousState !== SUBMISSION_STATE.DRAFT && descriptionChanged) {
+    return err(new PostSubmitMutationRefused());
+  }
+
+  return ok(undefined);
 }
 
 /**

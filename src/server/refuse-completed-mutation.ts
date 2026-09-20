@@ -1,9 +1,13 @@
 import { GlideRecord, gs } from "@servicenow/glide";
 
-import { canMutateSubmission, parseSubmissionState } from "./submission-policy.ts";
+import {
+  canMutateSubmission,
+  decideSubmissionUpdate,
+  parseSubmissionState,
+} from "./submission-policy.ts";
 
 /**
- * Abort updates to a Submission that is already Completed.
+ * Enforce post-submit integrity and abort invalid updates to a Submission.
  *
  * Type: Business Rule
  * Target table: x_711398_se_submission
@@ -25,6 +29,27 @@ export function refuseCompletedMutation(current: GlideRecord, previous: GlideRec
 
   if (!canMutateSubmission(previousState.value)) {
     gs.addErrorMessage("A Completed Submission cannot be edited");
+    current.setAbortAction(true);
+
+    return;
+  }
+
+  const descriptionChanged = current.getElement("description").changes();
+  const stateChanged = current.getElement("state").changes();
+  const validChanged = current.getElement("valid").changes();
+
+  // Allow programmatic transitions from our UI Actions / gate modules
+  // If state or valid changed, it must be an authorized lifecycle path
+  const decision = decideSubmissionUpdate(
+    previousState.value,
+    descriptionChanged,
+    stateChanged,
+    validChanged,
+    true, // server updates from authorized actions proceed; direct writes without changes or with description updates are checked
+  );
+
+  if (decision._tag === "err") {
+    gs.addErrorMessage(decision.error.message);
     current.setAbortAction(true);
   }
 }

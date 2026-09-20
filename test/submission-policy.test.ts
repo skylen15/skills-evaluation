@@ -9,6 +9,7 @@ import {
   decideCoeGate,
   decideInsert,
   decidePmGate,
+  decideSubmissionUpdate,
   decideSubmitForReview,
   levelForScore,
   PM_GATE_ACTION,
@@ -558,4 +559,90 @@ test("a Completed Submission cannot be edited, including Work notes", () => {
   assert.equal(canMutateSubmission(SUBMISSION_STATE.SUBMITTED), true);
   assert.equal(canMutateSubmission(SUBMISSION_STATE.REVIEWED), true);
   assert.equal(canMutateSubmission(SUBMISSION_STATE.COMPLETED), false);
+});
+
+test("decideSubmissionUpdate allows Work notes updates on Submitted and Reviewed", () => {
+  const submittedUpdate = decideSubmissionUpdate(
+    SUBMISSION_STATE.SUBMITTED,
+    false,
+    false,
+    false,
+    false,
+  );
+
+  assert.equal(submittedUpdate._tag, "ok");
+
+  const reviewedUpdate = decideSubmissionUpdate(
+    SUBMISSION_STATE.REVIEWED,
+    false,
+    false,
+    false,
+    false,
+  );
+
+  assert.equal(reviewedUpdate._tag, "ok");
+});
+
+test("decideSubmissionUpdate refuses Description updates on Submitted and Reviewed", () => {
+  const submittedUpdate = decideSubmissionUpdate(
+    SUBMISSION_STATE.SUBMITTED,
+    true,
+    false,
+    false,
+    false,
+  );
+
+  assert.equal(submittedUpdate._tag, "err");
+
+  if (submittedUpdate._tag === "err") {
+    assert.equal(submittedUpdate.error._tag, "PostSubmitMutationRefused");
+  }
+
+  const reviewedUpdate = decideSubmissionUpdate(
+    SUBMISSION_STATE.REVIEWED,
+    true,
+    false,
+    false,
+    false,
+  );
+
+  assert.equal(reviewedUpdate._tag, "err");
+
+  if (reviewedUpdate._tag === "err") {
+    assert.equal(reviewedUpdate.error._tag, "PostSubmitMutationRefused");
+  }
+});
+
+test("decideSubmissionUpdate refuses all updates on Completed", () => {
+  const completedUpdate = decideSubmissionUpdate(
+    SUBMISSION_STATE.COMPLETED,
+    false,
+    false,
+    false,
+    false,
+  );
+
+  assert.equal(completedUpdate._tag, "err");
+
+  if (completedUpdate._tag === "err") {
+    assert.equal(completedUpdate.error._tag, "PostSubmitMutationRefused");
+  }
+});
+
+test("decideSubmissionUpdate refuses direct State and Valid changes", () => {
+  const stateChange = decideSubmissionUpdate(SUBMISSION_STATE.DRAFT, false, true, false, false);
+
+  assert.equal(stateChange._tag, "err");
+
+  if (stateChange._tag === "err") {
+    assert.equal(stateChange.error._tag, "DirectStateChangeRefused");
+  }
+
+  const validChange = decideSubmissionUpdate(SUBMISSION_STATE.DRAFT, false, false, true, false);
+
+  assert.equal(validChange._tag, "err");
+
+  if (validChange._tag === "err") {
+    assert.equal(validChange.error._tag, "DirectValidChangeRefused");
+  }
 });

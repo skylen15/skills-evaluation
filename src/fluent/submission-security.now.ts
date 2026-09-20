@@ -46,7 +46,9 @@ Acl({
   table: "x_711398_se_submission",
   operation: "write",
   roles: [seAdmin],
-  description: "PM and CoE Head may write every Submission",
+  script: NOT_COMPLETED_SCRIPT,
+  description:
+    "PM and CoE Head may write Submissions until Completed (Work notes only when post-submit)",
 });
 
 Acl({
@@ -55,8 +57,9 @@ Acl({
   table: "x_711398_se_submission",
   operation: "write",
   roles: [seUser],
-  script: OWNER_SCRIPT,
-  description: "Members may write Submissions assigned to themselves",
+  script: OWNER_NOT_COMPLETED_SCRIPT,
+  description:
+    "Members may write their own Submission until Completed (Work notes only when post-submit)",
 });
 
 Acl({
@@ -95,7 +98,8 @@ Acl({
   field: "description",
   operation: "write",
   roles: [seAdmin],
-  description: "PM and CoE Head may write Description",
+  script: `answer = current.getValue('state') == '${DRAFT_STATE}';`,
+  description: "PM and CoE Head may write Description only while Draft",
 });
 
 Acl({
@@ -129,4 +133,27 @@ Acl({
   roles: [seUser],
   script: OWNER_NOT_COMPLETED_SCRIPT,
   description: "Members may write Work notes on their own Submissions until Completed",
+});
+
+Acl({
+  $id: Now.ID["submission-state-write"],
+  type: "record",
+  table: "x_711398_se_submission",
+  field: "state",
+  operation: "write",
+  roles: [seUser],
+  script: "answer = false;",
+  description:
+    "Direct updates to state are refused; transitions occur only through authorized actions",
+});
+
+Acl({
+  $id: Now.ID["submission-valid-write"],
+  type: "record",
+  table: "x_711398_se_submission",
+  field: "valid",
+  operation: "write",
+  roles: [seUser],
+  script: "answer = false;",
+  description: "Direct updates to valid are refused; valid is updated only by the CoE gate",
 });
