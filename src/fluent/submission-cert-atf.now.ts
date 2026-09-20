@@ -31,13 +31,13 @@ export const testSubmissionCertUniqueness = Test(
           var CERT_TABLE = "x_711398_se_certificate";
 
           var grCert1 = new GlideRecord(CERT_TABLE);
-          grCert1.addQuery("name", "ServiceNow Certified System Administrator");
+          grCert1.addQuery("name", "Servicenow System Administrator Certification (CSA)");
           grCert1.setLimit(1);
           grCert1.query();
           var cert1Id = grCert1.next() ? grCert1.getUniqueValue() : "";
 
           var grCert2 = new GlideRecord(CERT_TABLE);
-          grCert2.addQuery("name", "ServiceNow Certified Application Developer");
+          grCert2.addQuery("name", "Servicenow Certified Application Developer (CAD)");
           grCert2.setLimit(1);
           grCert2.query();
           var cert2Id = grCert2.next() ? grCert2.getUniqueValue() : "";
