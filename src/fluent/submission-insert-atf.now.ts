@@ -54,6 +54,9 @@ export const testSubmissionInsertAndInProgress = Test(
           var SUBMISSION_TABLE = "x_711398_se_submission";
           var SKILL_TABLE = "x_711398_se_skill";
           var SKILL_ASSESSMENT_TABLE = "x_711398_se_skill_assessment";
+          var DRAFT_STATE = "draft";
+          var INITIAL_SCORE = "0";
+          var INITIAL_VALID = "0";
           var COMPLETED_STATE = "completed";
           var PROFICIENCY_NOT_APPLICABLE = "0";
           var QUERY_ROW_LIMIT = 201;
@@ -69,6 +72,16 @@ export const testSubmissionInsertAndInProgress = Test(
           }
 
           describe("Submission insert and in-progress guard", function() {
+            it("initializes the Submission as the caller's non-Valid Draft", function() {
+              expect(submissionId).not.toBe("");
+              expect(memberId).toBe(gs.getUserID());
+              expect(grFirstSubmission.getValue("state")).toBe(DRAFT_STATE);
+              expect(grFirstSubmission.getValue("score")).toBe(INITIAL_SCORE);
+              expect(grFirstSubmission.getValue("level")).toBe("");
+              expect(grFirstSubmission.getValue("valid")).toBe(INITIAL_VALID);
+              expect(grFirstSubmission.getValue("opened_by")).toBe(memberId);
+            });
+
             it("creates one Not Applicable Skill Assessment per seeded Skill", function() {
               var skillIds = {};
               var assessmentCounts = {};

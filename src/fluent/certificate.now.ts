@@ -7,6 +7,12 @@ export const x_711398_se_certificate = Table({
   display: "name",
   actions: ["read", "create", "update", "delete"],
   createAccessControls: false,
+  index: [
+    {
+      unique: true,
+      element: ["product_line", "name"],
+    },
+  ],
   schema: {
     name: StringColumn({
       label: "Name",

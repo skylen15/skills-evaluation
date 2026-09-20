@@ -23,7 +23,7 @@ Form({
 List({
   table: "x_711398_se_skill_assessment",
   view: default_view,
-  columns: ["skill", "skill.product_line", "proficiency_level"],
+  columns: ["skill.description", "skill.product_line", "proficiency_level"],
 });
 
 UiPolicy({

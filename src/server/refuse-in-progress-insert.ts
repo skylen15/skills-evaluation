@@ -11,8 +11,12 @@ import {
 
 const SUBMISSION_TABLE = "x_711398_se_submission";
 
+const INITIAL_SCORE = "0";
+
+const INITIAL_VALID = "false";
+
 /**
- * Assign the caller and abort insert when they already have an in-progress Submission.
+ * Initialize a Draft Submission for the caller and abort when they already have an in-progress Submission.
  *
  * Type: Business Rule
  * Target table: x_711398_se_submission
@@ -23,9 +27,16 @@ const SUBMISSION_TABLE = "x_711398_se_submission";
  * @param _previous - Unused; insert has no previous row.
  */
 export function refuseInProgressInsert(current: GlideRecord, _previous: GlideRecord): void {
-  current.setValue("assigned_to", gs.getUserID());
+  const callerId = gs.getUserID();
 
-  const assignedTo = parseMemberId(current.getValue("assigned_to"));
+  current.setValue("assigned_to", callerId);
+  current.setValue("opened_by", callerId);
+  current.setValue("state", SUBMISSION_STATE.DRAFT);
+  current.setValue("score", INITIAL_SCORE);
+  current.setValue("level", "");
+  current.setValue("valid", INITIAL_VALID);
+
+  const assignedTo = parseMemberId(callerId);
 
   if (assignedTo._tag === "err") {
     gs.addErrorMessage(assignedTo.error.message);

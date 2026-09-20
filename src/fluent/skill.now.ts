@@ -7,6 +7,12 @@ export const x_711398_se_skill = Table({
   display: "description",
   actions: ["read", "create", "update", "delete"],
   createAccessControls: false,
+  index: [
+    {
+      unique: true,
+      element: ["product_line", "description"],
+    },
+  ],
   schema: {
     description: StringColumn({
       label: "Description",
