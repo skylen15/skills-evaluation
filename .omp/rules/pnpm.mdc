@@ -1,0 +1,15 @@
+---
+description: Always use pnpm instead of npm, yarn, or bun for package management and script execution
+alwaysApply: true
+---
+
+# Always Use pnpm
+
+This repository strictly enforces `pnpm` as the package manager. Never use `npm`, `yarn`, or `bun` for installing packages or running scripts.
+
+## Rules
+
+- **Package Management**: Use `pnpm install`, `pnpm add`, `pnpm remove`, `pnpm update`.
+- **Scripts**: Run `pnpm <script>` (e.g. `pnpm test`, `pnpm build`, `pnpm lint`, `pnpm deploy`).
+- **Binary execution**: Use `pnpm dlx` or `pnpm exec` instead of `npx`.
+- **Guardrails**: Enforced technically via `packageManager: "pnpm@..."` and `preinstall: "npx only-allow pnpm"` in `package.json`.

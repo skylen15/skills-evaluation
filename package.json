@@ -7,6 +7,7 @@
     "#now:*": "./@types/servicenow/fluent/*/index.js"
   },
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "build": "now-sdk build -a pdi-kl-o2",
     "deploy": "now-sdk install -a pdi-kl-o2",
     "transform": "now-sdk transform -a pdi-kl-o2",
@@ -31,5 +32,10 @@
     "oxfmt": "0.68.0",
     "oxlint": "1.83.0",
     "typescript": "5.5.4"
-  }
+  },
+  "engines": {
+    "npm": "please-use-pnpm",
+    "yarn": "please-use-pnpm"
+  },
+  "packageManager": "pnpm@11.21.0"
 }
