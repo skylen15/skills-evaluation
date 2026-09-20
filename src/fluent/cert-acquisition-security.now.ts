@@ -54,6 +54,27 @@ Acl({
 });
 
 Acl({
+  $id: Now.ID["cert-acquisition-write-se-admin"],
+  type: "record",
+  table: "x_711398_se_cert_acquisition",
+  operation: "write",
+  roles: [seAdmin],
+  script: ADMIN_DRAFT_SCRIPT,
+  description: "PM and CoE Head may write Cert Acquisitions only while the parent is Draft",
+});
+
+Acl({
+  $id: Now.ID["cert-acquisition-write-se-user-own"],
+  type: "record",
+  table: "x_711398_se_cert_acquisition",
+  operation: "write",
+  roles: [seUser],
+  script: OWNER_DRAFT_SCRIPT,
+  description:
+    "Members may write Cert Acquisitions on their own Submissions only while the parent is Draft",
+});
+
+Acl({
   $id: Now.ID["cert-acquisition-delete-se-admin"],
   type: "record",
   table: "x_711398_se_cert_acquisition",

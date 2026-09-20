@@ -9,8 +9,15 @@ Form({
       content: [
         {
           layout: "two-column",
-          leftElements: [{ field: "certificate", type: "table_field" }],
-          rightElements: [{ field: "certificate.product_line", type: "table_field" }],
+          leftElements: [
+            { field: "certificate", type: "table_field" },
+            { field: "certification_number", type: "table_field" },
+            { field: "certified_date", type: "table_field" },
+          ],
+          rightElements: [
+            { field: "certificate.product_line", type: "table_field" },
+            { field: "servicenow_release", type: "table_field" },
+          ],
         },
       ],
     },
@@ -20,5 +27,11 @@ Form({
 List({
   table: "x_711398_se_cert_acquisition",
   view: default_view,
-  columns: ["certificate", "certificate.product_line"],
+  columns: [
+    "certificate",
+    "certificate.product_line",
+    "certification_number",
+    "certified_date",
+    "servicenow_release",
+  ],
 });
