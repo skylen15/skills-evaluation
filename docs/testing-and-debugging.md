@@ -1,112 +1,117 @@
 # Testing & Debugging Runbook (Fast Feedback Loop)
 
-Hướng dẫn quy trình kiểm thử và vòng lặp gỡ lỗi (debug & fix loop) nhanh từ local cho ứng dụng Now SDK Fluent, không phụ thuộc vào giao diện web của instance hay full CI pipeline.
+Operational runbook for testing strategies and the terminal-first debug-and-fix feedback loop for Now SDK Fluent applications, independent of instance web UIs or full CI pipelines.
 
 ---
 
-## 1. Chiến lược kiểm thử 2 tầng (Two-Tier Testing Strategy)
+## 1. Two-Tier Testing Strategy
 
-| Tầng | Phạm vi | Lệnh | Thời gian | Khi nào nên dùng? |
+| Tier | Scope | Command | Duration | When to use |
 |---|---|---|---|---|
-| **Tier 1: Local Unit Test** | Logic nghiệp vụ thuần, policies, validations, state transitions (`src/server/*.ts`) | `pnpm test` | ~120ms | Chạy liên tục khi đang code logic nghiệp vụ tại local; không cần mạng/instance. |
-| **Tier 2: Instance ATF Suite** | Toàn bộ integration, ACLs, Business Rules, DB constraints trên ServiceNow | `pnpm test:atf` | 30s – 2m | Chạy sau khi deploy code lên instance hoặc trước khi mở PR/merge code. |
-| **Tier 2b: Single ATF Test** | Chạy riêng lẻ 1 test case trên instance để cô lập lỗi | `npx now-sdk cicd test run -a pdi-kl-o2 --test-name "<name>"` | 10s – 30s | Dùng trong vòng lặp debug/fix 1 lỗi cụ thể mà không cần chạy lại cả suite. |
+| **Tier 1: Local Unit Test** | Pure business logic, policies, validations, state transitions (`src/server/*.ts`) | `pnpm test` | ~120ms | Continuous local execution during business logic development; no network or instance required. |
+| **Tier 2: Instance ATF Suite** | End-to-end integration, ACLs, Business Rules, database constraints on ServiceNow | `pnpm test:atf` | 30s – 2m | Run after deploying code to an instance or before opening a PR/merging. |
+| **Tier 2b: Single ATF Test** | Run a single test case on the instance to isolate failures | `npx now-sdk cicd test run -a pdi-kl-o2 --test-name "<name>"` | 10s – 30s | Targeted debug/fix loops for an isolated failure without re-running the entire suite. |
 
 ---
 
-## 2. Tiêu chí chọn loại test
+## 2. Test Selection Criteria
 
-1. **Dùng Unit Test (`pnpm test`) khi**:
-   - Viết hoặc sửa đổi logic tính điểm (`recalculate-submission-score.ts`), chuyển trạng thái duyệt (`submission-policy.ts`), kiểm tra điều kiện gate (`take-pm-gate.ts`, `take-coe-gate.ts`).
-   - Kiểm tra các hàm thuần (pure functions) không phụ thuộc vào `GlideRecord` hay session HTTP.
+1. **Use Unit Tests (`pnpm test`) when**:
+   - Authoring or modifying score calculation (`recalculate-submission-score.ts`), approval state transitions (`submission-policy.ts`), or gate conditions (`take-pm-gate.ts`, `take-coe-gate.ts`).
+   - Testing pure functions with zero `GlideRecord` or HTTP session dependencies.
 
-2. **Dùng ATF Suite (`pnpm test:atf`) khi**:
-   - Kiểm tra quyền truy cập bảng (ACL query isolation, role checks).
-   - Kiểm tra Business Rule trước/sau khi insert/update/delete thực tế trên database (cascade delete, lock immutability).
-   - Sau khi thực hiện `pnpm deploy` (hoặc `now-sdk install`) để nghiệm thu toàn diện ứng dụng.
+2. **Use ATF Suite (`pnpm test:atf`) when**:
+   - Verifying table access control (ACL query isolation, role checks).
+   - Verifying Business Rules across database insert/update/delete operations (cascade delete, lock immutability).
+   - Performing full application verification after `pnpm deploy` (or `now-sdk install`).
 
-3. **Dùng Single ATF Test (`now-sdk cicd test run`) khi**:
-   - Suite báo lỗi ở 1 test cụ thể (ví dụ `"Submission - Gate Progression"`).
-   - Cần debug nhanh và lặp lại nhiều lần trên test đó cho đến khi pass.
+3. **Use Single ATF Test (`now-sdk cicd test run`) when**:
+   - A specific test in the suite fails (e.g. `"Submission - Gate Progression"`).
+   - Isolating and rapidly iterating on that single test until green.
+
+4. **ATF Implementation Standards**:
+   - When implementing or modifying ATF tests, always consult and follow the Now SDK `atf-guide` (`npx @servicenow/sdk explain atf-guide --format=raw`).
+   - Use the appropriate category namespaces (`atf.server`, `atf.form`, `atf.rest`, `atf.uiTestScript`, `atf.list`, etc.).
+   - Reconcile test cases with business logic changes: add tests for new logic, update tests when behavior changes, and delete obsolete tests when logic is removed.
 
 ---
 
-## 3. Fast Feedback Loop (Vòng lặp Debug & Fix từ Local)
+## 3. Fast Feedback Loop (Local Debug & Fix)
 
-Fast Feedback Loop giúp developer rút ngắn chu kỳ sửa lỗi từ vài phút (chờ full CI pipeline hoặc mở giao diện instance thủ công) xuống chỉ còn vài chục giây bằng cách cô lập lỗi và thực thi hoàn toàn từ terminal.
+The Fast Feedback Loop shortens failure triage cycles from minutes (waiting on full CI pipelines or navigating instance web forms) to tens of seconds by isolating errors and driving the entire loop from the terminal.
 
 ```
 [1. pnpm test:atf]
         │
-   (Thất bại?) ──► [2. Lấy result-id từ output]
+   (Failed?) ──► [2. Extract result-id from output]
                             │
                             ▼
-                 [3. Tra cứu log lỗi chi tiết qua CLI]
+                 [3. Inspect failure logs via CLI]
                      now-sdk cicd testsuite result --result-id <id> -a pdi-kl-o2
                      now-sdk cicd test logs --result-id <test_res_id> -a pdi-kl-o2
                             │
                             ▼
-                 [4. Sửa code tại src/server/*.ts hoặc src/fluent/*.now.ts]
+                 [4. Fix code in src/server/*.ts or src/fluent/*.now.ts]
                             │
                             ▼
-                 [5. Xác thực unit test local: pnpm test]
+                 [5. Verify local unit tests: pnpm test]
                             │
                             ▼
-                 [6. Deploy bản vá lên instance: pnpm deploy]
+                 [6. Deploy patch to instance: pnpm deploy]
                             │
                             ▼
-                 [7. Chạy lại riêng test đó: now-sdk cicd test run]
+                 [7. Re-run isolated failing test: now-sdk cicd test run]
                             │
-                      (Pass test đó?)
-                       ├── Chưa ──► Quay lại bước 4
-                       └── Rồi  ──► [8. Chạy lại toàn bộ suite: pnpm test:atf]
+                      (Passed?)
+                       ├── No  ──► Return to step 4
+                       └── Yes ──► [8. Re-run full suite: pnpm test:atf]
 ```
 
-### Chi tiết 8 bước thực thi:
+### 8-Step Execution Procedure:
 
-1. **Chạy toàn bộ Suite**:
+1. **Run full suite**:
    ```bash
    pnpm test:atf
    ```
-   Nếu test suite fail, command sẽ exit code khác 0 và in ra `result-id` (sys_id của kết quả run).
+   If the suite fails, the command exits with non-zero status and outputs `result-id` (sys_id of the test suite result).
 
-2. **Lấy `result-id`**:
-   Copy giá trị `result-id` từ terminal output của bước 1.
+2. **Extract `result-id`**:
+   Copy the `result-id` value from the terminal output of step 1.
 
-3. **Tra cứu chi tiết lỗi và logs của test case bị hỏng**:
+3. **Inspect failure details and logs**:
    ```bash
-   # Xem danh sách test con trong suite và sys_id của test bị fail:
+   # List test cases in the suite and get the sys_id of the failed test:
    npx now-sdk cicd testsuite result --result-id <result-id> -a pdi-kl-o2
 
-   # Lấy log chi tiết của test hỏng (thay <test-result-id> từ output trên):
+   # Retrieve detailed logs for the failing test (replace <test-result-id> from above):
    npx now-sdk cicd test logs --result-id <test-result-id> -a pdi-kl-o2
    ```
 
-4. **Sửa code tại local**:
-   - Lỗi logic server: sửa trong `src/server/*.ts`.
-   - Lỗi cấu hình metadata/ACLs/Business Rules: sửa trong `src/fluent/*.now.ts`.
+4. **Fix code locally**:
+   - Server logic errors: fix in `src/server/*.ts`.
+   - Metadata / ACL / Business Rule configuration issues: fix in `src/fluent/*.now.ts`.
 
-5. **Kiểm tra Unit Test local**:
+5. **Verify local unit tests**:
    ```bash
    pnpm test
    ```
-   Đảm bảo các kiểm thử logic thuần không bị phá vỡ (~120ms).
+   Ensure pure logic unit tests pass (~120ms).
 
-6. **Deploy bản sửa lên instance**:
+6. **Deploy patch to instance**:
    ```bash
    pnpm deploy
    ```
-   Build và cài đặt bản vá trực tiếp lên PDI/Test instance (`now-sdk install -a pdi-kl-o2`).
+   Build and install the patch directly to the target instance (`now-sdk install -a pdi-kl-o2`).
 
-7. **Chạy lại riêng lẻ test case bị hỏng (Tối ưu tốc độ lặp)**:
-   Không cần chạy lại toàn bộ suite, chỉ chạy đúng test đang debug:
+7. **Re-run the isolated failing test (fast iteration)**:
+   Avoid re-running the entire suite; execute only the test under active debugging:
    ```bash
    npx now-sdk cicd test run -a pdi-kl-o2 --test-name "Submission - Gate Progression"
    ```
-   Nếu chưa pass, tiếp tục lặp lại các bước 4–7.
+   If it still fails, repeat steps 4–7.
 
-8. **Nghiệm thu toàn bộ Suite**:
-   Khi test đơn lẻ đã pass, chạy lại toàn bộ suite để đảm bảo không phát sinh lỗi hồi quy (regression):
+8. **Validate full suite**:
+   Once the single test passes, run the full suite to verify no regressions:
    ```bash
    pnpm test:atf
    ```

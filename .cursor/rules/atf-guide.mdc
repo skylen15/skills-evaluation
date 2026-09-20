@@ -1,0 +1,43 @@
+---
+description: Follow atf-guide via now-sdk when implementing Automated Test Framework (ATF) tests
+alwaysApply: true
+---
+
+# Follow atf-guide for ATF Implementation
+
+When implementing or modifying ServiceNow Automated Test Framework (ATF) tests, always follow `atf-guide` via Now SDK. Do not guess ATF steps, methods, or category namespaces.
+
+## How to Read Guide
+
+Before implementing or editing any ATF test:
+
+```bash
+# Preview topic structure
+npx @servicenow/sdk explain atf-guide --peek --format=raw
+
+# Read full ATF implementation guide
+npx @servicenow/sdk explain atf-guide --format=raw
+```
+
+## Mandatory Rules
+
+- **Consult `atf-guide` first**: Run `npx @servicenow/sdk explain atf-guide --format=raw` for API signatures across all 13 ATF categories (`atf.server`, `atf.form`, `atf.rest`, `atf.uiTestScript`, `atf.applicationNavigator`, `atf.list`, `atf.form_SP`, `atf.catalog`, `atf.catalog_SP`, `atf.email`, `atf.reporting`, `atf.responsiveDashboard`).
+- **Follow Fluent ATF test structure**:
+  ```typescript
+  import { Test } from "@servicenow/sdk/core";
+  import "@servicenow/sdk/global";
+
+  Test({
+    $id: Now.ID["test_id"],
+    name: "test name",
+    description: "meaningful description",
+    failOnServerError: true,
+  }, (atf) => {
+    // Sequential steps using atf.<category>.<method>
+  });
+  ```
+- **Reconcile test suite on logic change**:
+  - **Added logic**: Add corresponding positive and negative ATF tests.
+  - **Changed logic**: Update existing test assertions to match the new behavior.
+  - **Removed logic**: Delete obsolete tests asserting removed logic.
+- **Related guides**: For custom UI (SPAs, UI Pages), check `npx @servicenow/sdk explain atf-ui-test-script-guide --format=raw`.

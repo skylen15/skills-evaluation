@@ -18,4 +18,4 @@ Verify before calling work done: format, then lint, then typecheck, then test, t
 
 ### Testing & Debugging
 
-For test execution strategy (unit test vs instance ATF), CLI log inspection, and the local fast feedback loop, see `docs/testing-and-debugging.md`.
+For test execution strategy (unit test vs instance ATF), CLI log inspection, and the local fast feedback loop, see `docs/testing-and-debugging.md`. When implementing ATF tests, follow `atf-guide` via Now SDK (`npx @servicenow/sdk explain atf-guide --format=raw`).
