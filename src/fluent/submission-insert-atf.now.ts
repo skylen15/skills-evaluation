@@ -5,7 +5,7 @@ import { skillEvaluationUser } from "./groups.now.ts";
 
 const SUBMISSION_TABLE = "x_711398_se_submission";
 
-Test(
+export const testSubmissionInsertAndInProgress = Test(
   {
     $id: Now.ID["atf-submission-insert-and-in-progress"],
     name: "Submission - insert and refuse in-progress duplicate",
