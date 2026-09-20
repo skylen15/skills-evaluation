@@ -934,70 +934,155 @@ declare global {
                     'src_server_access-roles_ts': {
                         table: 'sys_module'
                         id: 'a84152ec5527418ba88189595418a05b'
+                        deleted: true
+                    }
+                    'src_server_cert-acquisition_refuse-duplicate-cert-acquisition_ts': {
+                        table: 'sys_module'
+                        id: '15d1cfd4cf00435caa372d7b25393781'
+                    }
+                    'src_server_cert-acquisition_restrict-member-cert-acquisition-query_ts': {
+                        table: 'sys_module'
+                        id: 'ea29b97ce14247de99f694af51f8418e'
+                    }
+                    'src_server_common_access-roles_ts': {
+                        table: 'sys_module'
+                        id: '8e0f2d962d7f4c32a39957a8d79b4110'
+                    }
+                    'src_server_common_group-names_ts': {
+                        table: 'sys_module'
+                        id: '78b3c1cbca5c4923ab531669de06a4ac'
+                    }
+                    src_server_common_prelude_ts: {
+                        table: 'sys_module'
+                        id: '63ff36d4317d4798ad95116028761627'
                     }
                     'src_server_generate-skill-assessments_ts': {
                         table: 'sys_module'
                         id: '2142872a408a4f5586318c538e19bc25'
+                        deleted: true
                     }
                     'src_server_group-names_ts': {
                         table: 'sys_module'
                         id: '04e94114ec43446aa51ddc0b77121a59'
+                        deleted: true
                     }
                     src_server_prelude_ts: {
                         table: 'sys_module'
                         id: 'ff3047c022b5468697a49dbcfffa9ea0'
+                        deleted: true
                     }
                     'src_server_queue-submission-events_ts': {
                         table: 'sys_module'
                         id: '5232f46267a44bea85c71ae69ca85522'
+                        deleted: true
                     }
                     'src_server_recalculate-submission-score_ts': {
                         table: 'sys_module'
                         id: 'b56d5644e7c446cea30b453b38c1e90f'
+                        deleted: true
                     }
                     'src_server_refuse-completed-mutation_ts': {
                         table: 'sys_module'
                         id: 'be16d279bea14424a2ffa054a104b38b'
+                        deleted: true
                     }
                     'src_server_refuse-duplicate-cert-acquisition_ts': {
                         table: 'sys_module'
                         id: '1a39610c6064443d80f4bbf6d179f3bc'
+                        deleted: true
                     }
                     'src_server_refuse-extra-skill-assessment-insert_ts': {
                         table: 'sys_module'
                         id: 'f952e6b81a1c47709ca79d504cc71f0f'
+                        deleted: true
                     }
                     'src_server_refuse-in-progress-insert_ts': {
                         table: 'sys_module'
                         id: 'c3a190f029ed473ea7a8967bcb539685'
+                        deleted: true
                     }
                     'src_server_restrict-member-cert-acquisition-query_ts': {
                         table: 'sys_module'
                         id: 'dbe7365aaec94ff3a18a918d68618075'
+                        deleted: true
                     }
                     'src_server_restrict-member-skill-assessment-query_ts': {
                         table: 'sys_module'
                         id: 'cd7053116147401f9232af1a99598486'
+                        deleted: true
                     }
                     'src_server_restrict-member-submission-query_ts': {
                         table: 'sys_module'
                         id: 'ec4baab63539417283f3f63c9683e743'
+                        deleted: true
+                    }
+                    'src_server_skill-assessment_generate-skill-assessments_ts': {
+                        table: 'sys_module'
+                        id: '4a55400f829649959d67eccdca018a67'
+                    }
+                    'src_server_skill-assessment_refuse-extra-skill-assessment-insert_ts': {
+                        table: 'sys_module'
+                        id: '9168bcd0fbb34aec849b5e147aa2f348'
+                    }
+                    'src_server_skill-assessment_restrict-member-skill-assessment-query_ts': {
+                        table: 'sys_module'
+                        id: 'bc374a2f702d4b25a4f54fd650da8a21'
+                    }
+                    'src_server_submission_queue-submission-events_ts': {
+                        table: 'sys_module'
+                        id: 'd8febb4ac1d4435ea095b7253ad182a4'
+                    }
+                    'src_server_submission_recalculate-submission-score_ts': {
+                        table: 'sys_module'
+                        id: '19f5a931b34744e992d9adb0c096db64'
+                    }
+                    'src_server_submission_refuse-completed-mutation_ts': {
+                        table: 'sys_module'
+                        id: '3a0e2ff0e451475bac1dc71ca73adb97'
+                    }
+                    'src_server_submission_refuse-in-progress-insert_ts': {
+                        table: 'sys_module'
+                        id: 'd04033a47ae84957acdbba331019808b'
+                    }
+                    'src_server_submission_restrict-member-submission-query_ts': {
+                        table: 'sys_module'
+                        id: 'c3652c125c0346589e6e910ca5739694'
+                    }
+                    'src_server_submission_submission-policy_ts': {
+                        table: 'sys_module'
+                        id: '2f60650fcb724e619087def307ab169f'
+                    }
+                    'src_server_submission_submit-for-review_ts': {
+                        table: 'sys_module'
+                        id: 'f98bb3a51bd3450ba87bfbfd72235412'
+                    }
+                    'src_server_submission_take-coe-gate_ts': {
+                        table: 'sys_module'
+                        id: 'fd4822cc84ac4fe8a585608616cf64e6'
+                    }
+                    'src_server_submission_take-pm-gate_ts': {
+                        table: 'sys_module'
+                        id: '0f4a748eebef40a2ac3ff3c71c0171da'
                     }
                     'src_server_submission-policy_ts': {
                         table: 'sys_module'
                         id: 'e58387ead6be4440a382432a0bd3a611'
+                        deleted: true
                     }
                     'src_server_submit-for-review_ts': {
                         table: 'sys_module'
                         id: '0a775208fe4941aba9f2a3c83a3215c8'
+                        deleted: true
                     }
                     'src_server_take-coe-gate_ts': {
                         table: 'sys_module'
                         id: 'e84b97e1673a4fbfb712b46f055fac00'
+                        deleted: true
                     }
                     'src_server_take-pm-gate_ts': {
                         table: 'sys_module'
                         id: 'fa0e0bc980944bfca45887f536535976'
+                        deleted: true
                     }
                     'submission-cert-acquisition-related-list': {
                         table: 'sys_ui_related_list_entry'

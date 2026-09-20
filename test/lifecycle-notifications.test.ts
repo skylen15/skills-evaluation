@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { SUBMISSION_EVENTS } from "../src/server/submission-policy.ts";
+import { SUBMISSION_EVENTS } from "../src/server/submission/submission-policy.ts";
 
 test("lifecycle events map to valid event names", () => {
   assert.equal(SUBMISSION_EVENTS.CREATED, "x_711398_se.submission.created");

@@ -23,7 +23,7 @@ import {
   type LevelId,
   type MemberId,
   type SubmissionId,
-} from "../src/server/submission-policy.ts";
+} from "../src/server/submission/submission-policy.ts";
 
 /**
  * @param raw - A known-good member id for tests.
