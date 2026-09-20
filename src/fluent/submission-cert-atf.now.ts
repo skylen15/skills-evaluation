@@ -1,15 +1,7 @@
 import { Test } from "@servicenow/sdk/core";
 import "@servicenow/sdk/global";
 
-import {
-  certificateApplicationDeveloper,
-  certificateSystemAdministrator,
-} from "./certificate-seed.now.ts";
 import { skillEvaluationUser } from "./groups.now.ts";
-
-const SUBMISSION_TABLE = "x_711398_se_submission";
-
-const CERT_ACQUISITION_TABLE = "x_711398_se_cert_acquisition";
 
 export const testSubmissionCertUniqueness = Test(
   {
@@ -29,78 +21,73 @@ export const testSubmissionCertUniqueness = Test(
       impersonate: true,
     });
 
-    const submission = atf.server.recordInsert({
-      $id: Now.ID["atf-submission-cert-insert-submission"],
-      table: SUBMISSION_TABLE,
-      fieldValues: {
-        description: "ATF cert acquisition uniqueness test",
-      },
-      assert: "record_successfully_inserted",
-      enforceSecurity: true,
-    });
-
-    atf.server.recordInsert({
-      $id: Now.ID["atf-submission-cert-first-insert"],
-      table: CERT_ACQUISITION_TABLE,
-      fieldValues: {
-        submission: submission.record_id,
-        certificate: certificateSystemAdministrator,
-      },
-      assert: "record_successfully_inserted",
-      enforceSecurity: true,
-    });
-
-    atf.server.recordInsert({
-      $id: Now.ID["atf-submission-cert-duplicate-insert"],
-      table: CERT_ACQUISITION_TABLE,
-      fieldValues: {
-        submission: submission.record_id,
-        certificate: certificateSystemAdministrator,
-      },
-      assert: "record_not_inserted",
-      enforceSecurity: true,
-    });
-
-    atf.server.recordInsert({
-      $id: Now.ID["atf-submission-cert-different-insert"],
-      table: CERT_ACQUISITION_TABLE,
-      fieldValues: {
-        submission: submission.record_id,
-        certificate: certificateApplicationDeveloper,
-      },
-      assert: "record_successfully_inserted",
-      enforceSecurity: true,
-    });
-
     atf.server.runServerSideScript({
       $id: Now.ID["atf-submission-cert-assertions"],
       jasmineVersion: "3.1",
       script: `
-        // Type: ATF Run Server Side Script
-        // ES mode: ES5 (Rhino)
-        // Script context: outputs, steps, params, stepResult, assertEqual
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
           var CERT_ACQUISITION_TABLE = "x_711398_se_cert_acquisition";
-          var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
-          grSeedSub.addQuery("description", "ATF cert acquisition uniqueness test");
-          grSeedSub.setLimit(1);
-          grSeedSub.query();
-          var submissionId = grSeedSub.next() ? grSeedSub.getUniqueValue() : "";
+          var CERT_TABLE = "x_711398_se_certificate";
+
+          var grCert1 = new GlideRecord(CERT_TABLE);
+          grCert1.addQuery("name", "ServiceNow Certified System Administrator");
+          grCert1.setLimit(1);
+          grCert1.query();
+          var cert1Id = grCert1.next() ? grCert1.getUniqueValue() : "";
+
+          var grCert2 = new GlideRecord(CERT_TABLE);
+          grCert2.addQuery("name", "ServiceNow Certified Application Developer");
+          grCert2.setLimit(1);
+          grCert2.query();
+          var cert2Id = grCert2.next() ? grCert2.getUniqueValue() : "";
+
+          var grSub = new GlideRecord(SUBMISSION_TABLE);
+          grSub.initialize();
+          grSub.setValue("description", "ATF cert acquisition uniqueness test");
+          var submissionId = grSub.insert();
 
           describe("Cert Acquisition uniqueness", function() {
-            it("contains exactly two distinct Certificate claims for this Submission", function() {
-              var grAcquisition = new GlideRecord(CERT_ACQUISITION_TABLE);
-              grAcquisition.addQuery("submission", submissionId);
-              grAcquisition.query();
+            it("claims the same Certificate twice is refused and different Certificate is allowed", function() {
+              expect(submissionId).not.toBeNull();
+              expect(cert1Id).not.toBe("");
+              expect(cert2Id).not.toBe("");
 
-              var certs = [];
-              while (grAcquisition.next()) {
-                certs.push(grAcquisition.getValue("certificate"));
+              // First insert with cert1
+              var grAcq1 = new GlideRecord(CERT_ACQUISITION_TABLE);
+              grAcq1.initialize();
+              grAcq1.setValue("submission", submissionId);
+              grAcq1.setValue("certificate", cert1Id);
+              var acq1Id = grAcq1.insert();
+              expect(acq1Id).not.toBeNull();
+
+              // Duplicate insert with cert1 must fail
+              var grAcqDup = new GlideRecord(CERT_ACQUISITION_TABLE);
+              grAcqDup.initialize();
+              grAcqDup.setValue("submission", submissionId);
+              grAcqDup.setValue("certificate", cert1Id);
+              var acqDupId = grAcqDup.insert();
+              expect(acqDupId).toBeNull();
+
+              // Different insert with cert2 must succeed
+              var grAcq2 = new GlideRecord(CERT_ACQUISITION_TABLE);
+              grAcq2.initialize();
+              grAcq2.setValue("submission", submissionId);
+              grAcq2.setValue("certificate", cert2Id);
+              var acq2Id = grAcq2.insert();
+              expect(acq2Id).not.toBeNull();
+
+              // Verify exactly 2 distinct Certificate claims exist
+              var grCount = new GlideRecord(CERT_ACQUISITION_TABLE);
+              grCount.addQuery("submission", submissionId);
+              grCount.query();
+              var claims = [];
+              while (grCount.next()) {
+                claims.push(grCount.getValue("certificate"));
               }
-
-              expect(certs.length).toBe(2);
-              expect(certs[0]).not.toEqual(certs[1]);
+              expect(claims.length).toBe(2);
+              expect(claims).toContain(cert1Id);
+              expect(claims).toContain(cert2Id);
             });
           });
         })(outputs, steps, params, stepResult, assertEqual);

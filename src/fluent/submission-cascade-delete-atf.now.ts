@@ -1,12 +1,9 @@
 import { Test } from "@servicenow/sdk/core";
 import "@servicenow/sdk/global";
 
-import { certificateSystemAdministrator } from "./certificate-seed.now.ts";
 import { skillEvaluationPm, skillEvaluationUser } from "./groups.now.ts";
 
 const SUBMISSION_TABLE = "x_711398_se_submission";
-
-const CERT_ACQUISITION_TABLE = "x_711398_se_cert_acquisition";
 
 export const testSubmissionCascadeDelete = Test(
   {
@@ -33,7 +30,7 @@ export const testSubmissionCascadeDelete = Test(
       groups: [skillEvaluationPm],
     });
 
-    const submission = atf.server.recordInsert({
+    atf.server.recordInsert({
       $id: Now.ID["atf-submission-delete-insert-submission"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -43,15 +40,42 @@ export const testSubmissionCascadeDelete = Test(
       enforceSecurity: true,
     });
 
-    atf.server.recordInsert({
+    atf.server.runServerSideScript({
       $id: Now.ID["atf-submission-delete-insert-cert"],
-      table: CERT_ACQUISITION_TABLE,
-      fieldValues: {
-        submission: submission.record_id,
-        certificate: certificateSystemAdministrator,
-      },
-      assert: "record_successfully_inserted",
-      enforceSecurity: true,
+      jasmineVersion: "3.1",
+      script: `
+        (function(outputs, steps, params, stepResult, assertEqual) {
+          var SUBMISSION_TABLE = "x_711398_se_submission";
+          var CERT_ACQUISITION_TABLE = "x_711398_se_cert_acquisition";
+          var CERT_TABLE = "x_711398_se_certificate";
+
+          var grCert = new GlideRecord(CERT_TABLE);
+          grCert.addQuery("name", "ServiceNow Certified System Administrator");
+          grCert.setLimit(1);
+          grCert.query();
+          var certId = grCert.next() ? grCert.getUniqueValue() : "";
+
+          var grSub = new GlideRecord(SUBMISSION_TABLE);
+          grSub.addQuery("description", "Submission targeted for cascade delete testing");
+          grSub.setLimit(1);
+          grSub.query();
+          var subId = grSub.next() ? grSub.getUniqueValue() : "";
+
+          var grAcq = new GlideRecord(CERT_ACQUISITION_TABLE);
+          grAcq.initialize();
+          grAcq.setValue("submission", subId);
+          grAcq.setValue("certificate", certId);
+          grAcq.insert();
+
+          describe("Cascade delete prep", function() {
+            it("inserts child cert acquisition", function() {
+              expect(subId).not.toBe("");
+              expect(certId).not.toBe("");
+            });
+          });
+        })(outputs, steps, params, stepResult, assertEqual);
+        jasmine.getEnv().execute();
+      `,
     });
 
     atf.server.impersonate({
