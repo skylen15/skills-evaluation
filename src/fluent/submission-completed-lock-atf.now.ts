@@ -15,7 +15,7 @@ export const testSubmissionCompletedImmutability = Test(
     failOnServerError: true,
   },
   (atf) => {
-    atf.server.createUser({
+    const member = atf.server.createUser({
       $id: Now.ID["atf-submission-lock-create-member"],
       firstName: "ATF",
       lastName: "Lock Member",
@@ -23,18 +23,23 @@ export const testSubmissionCompletedImmutability = Test(
       impersonate: true,
     });
 
-    atf.server.createUser({
+    const pm = atf.server.createUser({
       $id: Now.ID["atf-submission-lock-create-pm"],
       firstName: "ATF",
       lastName: "Lock PM",
       groups: [skillEvaluationPm],
     });
 
-    atf.server.createUser({
+    const coeHead = atf.server.createUser({
       $id: Now.ID["atf-submission-lock-create-coe"],
       firstName: "ATF",
       lastName: "Lock CoE Head",
       groups: [skillEvaluationCoe],
+    });
+
+    atf.server.impersonate({
+      $id: Now.ID["atf-submission-lock-impersonate-member-initial"],
+      user: member.user,
     });
 
     atf.server.recordInsert({
@@ -48,85 +53,167 @@ export const testSubmissionCompletedImmutability = Test(
     });
 
     atf.server.runServerSideScript({
-      $id: Now.ID["atf-submission-lock-assertions"],
+      $id: Now.ID["atf-submission-lock-member-submit"],
       jasmineVersion: "3.1",
       script: `
-        // Type: ATF Run Server Side Script
-        // ES mode: ES5 (Rhino)
-        // Script context: outputs, steps, params, stepResult, assertEqual
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          function getUserSysId(firstName, lastName) {
-            var grUser = new GlideRecord("sys_user");
-            grUser.addQuery("first_name", firstName);
-            grUser.addQuery("last_name", lastName);
-            grUser.setLimit(1);
-            grUser.query();
-            return grUser.next() ? grUser.getUniqueValue() : "";
-          }
-
-          var memberId = getUserSysId("ATF", "Lock Member");
-          var pmId = getUserSysId("ATF", "Lock PM");
-          var coeHeadId = getUserSysId("ATF", "Lock CoE Head");
-
-          var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
-          grSeedSub.addQuery("description", "Original completed submission description");
-          grSeedSub.setLimit(1);
-          grSeedSub.query();
-          var submissionId = grSeedSub.next() ? grSeedSub.getUniqueValue() : "";
-
           var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
-          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");
-          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-coe-gate.ts");
+          var grSub = new GlideRecord(SUBMISSION_TABLE);
+          grSub.addQuery("assigned_to", gs.getUserID());
+          grSub.setLimit(1);
+          grSub.query();
+          var subId = grSub.next() ? grSub.getUniqueValue() : "";
 
-          describe("Completed Submission immutability", function() {
-            it("drives Submission to Completed state", function() {
-              gs.getSession().impersonate(memberId);
-              var grSub = new GlideRecord(SUBMISSION_TABLE);
-              expect(grSub.get(submissionId)).toBe(true);
+          describe("Lock - member submit", function() {
+            it("moves state to submitted", function() {
+              expect(subId).not.toBe("");
               submitModule.submitForReview(grSub);
-
-              gs.getSession().impersonate(pmId);
-              var grPm = new GlideRecord(SUBMISSION_TABLE);
-              expect(grPm.get(submissionId)).toBe(true);
-              pmModule.approveAtPmGate(grPm);
-
-              gs.getSession().impersonate(coeHeadId);
-              var grCoe = new GlideRecord(SUBMISSION_TABLE);
-              expect(grCoe.get(submissionId)).toBe(true);
-              coeModule.approveAtCoeGate(grCoe);
-
               var grCheck = new GlideRecord(SUBMISSION_TABLE);
-              expect(grCheck.get(submissionId)).toBe(true);
+              expect(grCheck.get(subId)).toBe(true);
+              expect(grCheck.getValue("state")).toBe("submitted");
+            });
+          });
+        })(outputs, steps, params, stepResult, assertEqual);
+        jasmine.getEnv().execute();
+      `,
+    });
+
+    atf.server.impersonate({
+      $id: Now.ID["atf-submission-lock-impersonate-pm"],
+      user: pm.user,
+    });
+
+    atf.server.runServerSideScript({
+      $id: Now.ID["atf-submission-lock-pm-approve"],
+      jasmineVersion: "3.1",
+      script: `
+        (function(outputs, steps, params, stepResult, assertEqual) {
+          var SUBMISSION_TABLE = "x_711398_se_submission";
+          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");
+          var grSub = new GlideRecord(SUBMISSION_TABLE);
+          grSub.addQuery("description", "Original completed submission description");
+          grSub.setLimit(1);
+          grSub.query();
+          var subId = grSub.next() ? grSub.getUniqueValue() : "";
+
+          describe("Lock - PM approve", function() {
+            it("moves state to reviewed", function() {
+              expect(subId).not.toBe("");
+              pmModule.approveAtPmGate(grSub);
+              var grCheck = new GlideRecord(SUBMISSION_TABLE);
+              expect(grCheck.get(subId)).toBe(true);
+              expect(grCheck.getValue("state")).toBe("reviewed");
+            });
+          });
+        })(outputs, steps, params, stepResult, assertEqual);
+        jasmine.getEnv().execute();
+      `,
+    });
+
+    atf.server.impersonate({
+      $id: Now.ID["atf-submission-lock-impersonate-coe"],
+      user: coeHead.user,
+    });
+
+    atf.server.runServerSideScript({
+      $id: Now.ID["atf-submission-lock-coe-approve"],
+      jasmineVersion: "3.1",
+      script: `
+        (function(outputs, steps, params, stepResult, assertEqual) {
+          var SUBMISSION_TABLE = "x_711398_se_submission";
+          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-coe-gate.ts");
+          var grSub = new GlideRecord(SUBMISSION_TABLE);
+          grSub.addQuery("description", "Original completed submission description");
+          grSub.setLimit(1);
+          grSub.query();
+          var subId = grSub.next() ? grSub.getUniqueValue() : "";
+
+          describe("Lock - CoE Head approve", function() {
+            it("moves state to completed", function() {
+              expect(subId).not.toBe("");
+              coeModule.approveAtCoeGate(grSub);
+              var grCheck = new GlideRecord(SUBMISSION_TABLE);
+              expect(grCheck.get(subId)).toBe(true);
               expect(grCheck.getValue("state")).toBe("completed");
             });
+          });
+        })(outputs, steps, params, stepResult, assertEqual);
+        jasmine.getEnv().execute();
+      `,
+    });
 
+    atf.server.impersonate({
+      $id: Now.ID["atf-submission-lock-impersonate-member-for-update"],
+      user: member.user,
+    });
+
+    atf.server.runServerSideScript({
+      $id: Now.ID["atf-submission-lock-assert-desc-update-refused"],
+      jasmineVersion: "3.1",
+      script: `
+        (function(outputs, steps, params, stepResult, assertEqual) {
+          var SUBMISSION_TABLE = "x_711398_se_submission";
+          var grSub = new GlideRecord(SUBMISSION_TABLE);
+          grSub.addQuery("assigned_to", gs.getUserID());
+          grSub.setLimit(1);
+          grSub.query();
+          var subId = grSub.next() ? grSub.getUniqueValue() : "";
+
+          describe("Completed Submission immutability - Description", function() {
             it("refuses updating Description on Completed Submission", function() {
-              gs.getSession().impersonate(memberId);
-              var grSub = new GlideRecord(SUBMISSION_TABLE);
-              expect(grSub.get(submissionId)).toBe(true);
-
+              expect(subId).not.toBe("");
               grSub.setValue("description", "Modified description after completion");
               var updateResult = grSub.update();
               expect(updateResult).toBeNull();
 
               var grReload = new GlideRecord(SUBMISSION_TABLE);
-              expect(grReload.get(submissionId)).toBe(true);
+              expect(grReload.get(subId)).toBe(true);
               expect(grReload.getValue("description")).toBe("Original completed submission description");
             });
+          });
+        })(outputs, steps, params, stepResult, assertEqual);
+        jasmine.getEnv().execute();
+      `,
+    });
 
+    atf.server.impersonate({
+      $id: Now.ID["atf-submission-lock-impersonate-pm-for-work-notes"],
+      user: pm.user,
+    });
+
+    atf.server.runServerSideScript({
+      $id: Now.ID["atf-submission-lock-assert-work-notes-refused"],
+      jasmineVersion: "3.1",
+      script: `
+        (function(outputs, steps, params, stepResult, assertEqual) {
+          var SUBMISSION_TABLE = "x_711398_se_submission";
+          var grFind = new GlideRecord(SUBMISSION_TABLE);
+          grFind.addQuery("description", "Original completed submission description");
+          grFind.setLimit(1);
+          grFind.query();
+          var subId = grFind.next() ? grFind.getUniqueValue() : "";
+
+          describe("Completed Submission immutability - Work notes", function() {
             it("refuses updating Work notes on Completed Submission", function() {
-              gs.getSession().impersonate(pmId);
+              expect(subId).not.toBe("");
               var grSub = new GlideRecord(SUBMISSION_TABLE);
-              expect(grSub.get(submissionId)).toBe(true);
-
+              expect(grSub.get(subId)).toBe(true);
+              expect(grSub.getValue("state")).toBe("completed");
               grSub.setValue("work_notes", "Attempting work notes update on completed record");
-              var updateResult = grSub.update();
-              expect(updateResult).toBeNull();
+              grSub.update();
 
               var grReload = new GlideRecord(SUBMISSION_TABLE);
-              expect(grReload.get(submissionId)).toBe(true);
+              expect(grReload.get(subId)).toBe(true);
               expect(grReload.getValue("state")).toBe("completed");
+              expect(grSub.isActionAborted() || grReload.getValue("work_notes") !== "Attempting work notes update on completed record").toBe(true);
+
+              var grJournal = new GlideRecord("sys_journal_field");
+              grJournal.addQuery("name", SUBMISSION_TABLE);
+              grJournal.addQuery("element_id", subId);
+              grJournal.addQuery("value", "CONTAINS", "Attempting work notes update on completed record");
+              grJournal.query();
+              expect(grJournal.hasNext()).toBe(false);
             });
           });
         })(outputs, steps, params, stepResult, assertEqual);

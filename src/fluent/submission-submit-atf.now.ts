@@ -15,7 +15,7 @@ export const testSubmissionSubmitForReview = Test(
     failOnServerError: true,
   },
   (atf) => {
-    atf.server.createUser({
+    const member = atf.server.createUser({
       $id: Now.ID["atf-submission-submit-create-member"],
       firstName: "ATF",
       lastName: "Submit Member",
@@ -23,11 +23,16 @@ export const testSubmissionSubmitForReview = Test(
       impersonate: true,
     });
 
-    atf.server.createUser({
+    const otherUser = atf.server.createUser({
       $id: Now.ID["atf-submission-submit-create-other-user"],
       firstName: "ATF",
       lastName: "Submit Other User",
       groups: [skillEvaluationUser],
+    });
+
+    atf.server.impersonate({
+      $id: Now.ID["atf-submission-submit-impersonate-member-initial"],
+      user: member.user,
     });
 
     atf.server.recordInsert({
@@ -41,38 +46,20 @@ export const testSubmissionSubmitForReview = Test(
     });
 
     atf.server.runServerSideScript({
-      $id: Now.ID["atf-submission-submit-assertions"],
+      $id: Now.ID["atf-submission-submit-assert-empty-desc"],
       jasmineVersion: "3.1",
       script: `
-        // Type: ATF Run Server Side Script
-        // ES mode: ES5 (Rhino)
-        // Script context: outputs, steps, params, stepResult, assertEqual
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var grUser = new GlideRecord("sys_user");
-          grUser.addQuery("first_name", "ATF");
-          grUser.addQuery("last_name", "Submit Member");
-          grUser.setLimit(1);
-          grUser.query();
-          var memberId = grUser.next() ? grUser.getUniqueValue() : "";
-
-          var grOtherUser = new GlideRecord("sys_user");
-          grOtherUser.addQuery("first_name", "ATF");
-          grOtherUser.addQuery("last_name", "Submit Other User");
-          grOtherUser.setLimit(1);
-          grOtherUser.query();
-          var otherUserId = grOtherUser.next() ? grOtherUser.getUniqueValue() : "";
-
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
           var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
-          grSeedSub.addQuery("assigned_to", memberId);
+          grSeedSub.addQuery("assigned_to", gs.getUserID());
           grSeedSub.setLimit(1);
           grSeedSub.query();
           var submissionId = grSeedSub.next() ? grSeedSub.getUniqueValue() : "";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
 
-          describe("Submission submit for review", function() {
+          describe("Submission submit for review - empty description", function() {
             it("refuses submit when Description is empty", function() {
-              gs.getSession().impersonate(memberId);
               var grSub = new GlideRecord(SUBMISSION_TABLE);
               expect(grSub.get(submissionId)).toBe(true);
               expect(grSub.getValue("state")).toBe("draft");
@@ -83,33 +70,108 @@ export const testSubmissionSubmitForReview = Test(
               expect(grReload.get(submissionId)).toBe(true);
               expect(grReload.getValue("state")).toBe("draft");
             });
+          });
+        })(outputs, steps, params, stepResult, assertEqual);
+        jasmine.getEnv().execute();
+      `,
+    });
 
+    atf.server.runServerSideScript({
+      $id: Now.ID["atf-submission-submit-set-valid-desc"],
+      jasmineVersion: "3.1",
+      script: `
+        (function(outputs, steps, params, stepResult, assertEqual) {
+          var SUBMISSION_TABLE = "x_711398_se_submission";
+          var grSub = new GlideRecord(SUBMISSION_TABLE);
+          grSub.addQuery("assigned_to", gs.getUserID());
+          grSub.setLimit(1);
+          grSub.query();
+          var subId = "";
+          if (grSub.next()) {
+            subId = grSub.getUniqueValue();
+            grSub.setValue("description", "Valid self-assessment ready for review");
+            grSub.update();
+          }
+          outputs.table = SUBMISSION_TABLE;
+          outputs.record_id = subId;
+          describe("Submission set valid description", function() {
+            it("updates description", function() {
+              expect(grSub.getValue("description")).toBe("Valid self-assessment ready for review");
+            });
+          });
+        })(outputs, steps, params, stepResult, assertEqual);
+        jasmine.getEnv().execute();
+      `,
+    });
+
+    atf.server.impersonate({
+      $id: Now.ID["atf-submission-submit-impersonate-other"],
+      user: otherUser.user,
+    });
+
+    atf.server.runServerSideScript({
+      $id: Now.ID["atf-submission-submit-assert-non-assigned"],
+      jasmineVersion: "3.1",
+      script: `
+        (function(outputs, steps, params, stepResult, assertEqual) {
+          var SUBMISSION_TABLE = "x_711398_se_submission";
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var grMember = new GlideRecord("sys_user");
+          grMember.addQuery("first_name", "ATF");
+          grMember.addQuery("last_name", "Submit Member");
+          grMember.setLimit(1);
+          grMember.query();
+          var memberId = grMember.next() ? grMember.getUniqueValue() : "";
+
+          var grSub = new GlideRecord(SUBMISSION_TABLE);
+          grSub.setWorkflow(false);
+          grSub.addQuery("assigned_to", memberId);
+          grSub.setLimit(1);
+          grSub.query();
+          var submissionId = grSub.next() ? grSub.getUniqueValue() : "";
+
+          describe("Submission submit for review - non assigned", function() {
             it("refuses submit when caller is not Assigned to", function() {
-              // Add a valid description first
-              gs.getSession().impersonate(memberId);
-              var grSub = new GlideRecord(SUBMISSION_TABLE);
-              expect(grSub.get(submissionId)).toBe(true);
-              grSub.setValue("description", "Valid self-assessment ready for review");
-              grSub.update();
-
-              // Impersonate other user who is not assigned_to
-              gs.getSession().impersonate(otherUserId);
-              var grOther = new GlideRecord(SUBMISSION_TABLE);
-              if (grOther.get(submissionId)) {
-                submitModule.submitForReview(grOther);
-              }
+              expect(submissionId).not.toBe("");
+              var grTarget = new GlideRecord(SUBMISSION_TABLE);
+              grTarget.setWorkflow(false);
+              expect(grTarget.get(submissionId)).toBe(true);
+              submitModule.submitForReview(grTarget);
 
               var grReload = new GlideRecord(SUBMISSION_TABLE);
+              grReload.setWorkflow(false);
               expect(grReload.get(submissionId)).toBe(true);
               expect(grReload.getValue("state")).toBe("draft");
             });
+          });
+        })(outputs, steps, params, stepResult, assertEqual);
+        jasmine.getEnv().execute();
+      `,
+    });
 
+    atf.server.impersonate({
+      $id: Now.ID["atf-submission-submit-impersonate-member-final"],
+      user: member.user,
+    });
+
+    atf.server.runServerSideScript({
+      $id: Now.ID["atf-submission-submit-assert-success"],
+      jasmineVersion: "3.1",
+      script: `
+        (function(outputs, steps, params, stepResult, assertEqual) {
+          var SUBMISSION_TABLE = "x_711398_se_submission";
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var grSub = new GlideRecord(SUBMISSION_TABLE);
+          grSub.addQuery("assigned_to", gs.getUserID());
+          grSub.setLimit(1);
+          grSub.query();
+          var submissionId = grSub.next() ? grSub.getUniqueValue() : "";
+
+          describe("Submission submit for review - success", function() {
             it("moves state to Submitted when submitted with Description by Assigned to", function() {
-              gs.getSession().impersonate(memberId);
-              var grSub = new GlideRecord(SUBMISSION_TABLE);
-              expect(grSub.get(submissionId)).toBe(true);
-
-              submitModule.submitForReview(grSub);
+              var grTarget = new GlideRecord(SUBMISSION_TABLE);
+              expect(grTarget.get(submissionId)).toBe(true);
+              submitModule.submitForReview(grTarget);
 
               var grReload = new GlideRecord(SUBMISSION_TABLE);
               expect(grReload.get(submissionId)).toBe(true);

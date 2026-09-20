@@ -15,7 +15,7 @@ export const testSubmissionMemberQueryIsolation = Test(
     failOnServerError: true,
   },
   (atf) => {
-    atf.server.createUser({
+    const member1 = atf.server.createUser({
       $id: Now.ID["atf-submission-query-member-1"],
       firstName: "ATF",
       lastName: "Query Member One",
@@ -51,23 +51,26 @@ export const testSubmissionMemberQueryIsolation = Test(
       enforceSecurity: true,
     });
 
+    atf.server.impersonate({
+      $id: Now.ID["atf-submission-query-impersonate-member-1"],
+      user: member1.user,
+    });
+
     atf.server.runServerSideScript({
       $id: Now.ID["atf-submission-query-assertions"],
       jasmineVersion: "3.1",
       script: `
-        // Type: ATF Run Server Side Script
-        // ES mode: ES5 (Rhino)
-        // Script context: outputs, steps, params, stepResult, assertEqual
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
           var grSub1 = new GlideRecord(SUBMISSION_TABLE);
+          grSub1.setWorkflow(false);
           grSub1.addQuery("description", "Submission belonging to Member One");
           grSub1.setLimit(1);
           grSub1.query();
           var sub1Id = grSub1.next() ? grSub1.getUniqueValue() : "";
-          var member1Id = grSub1.getValue("assigned_to");
 
           var grSub2 = new GlideRecord(SUBMISSION_TABLE);
+          grSub2.setWorkflow(false);
           grSub2.addQuery("description", "Submission belonging to Member Two");
           grSub2.setLimit(1);
           grSub2.query();
@@ -75,10 +78,10 @@ export const testSubmissionMemberQueryIsolation = Test(
 
           describe("Member query isolation", function() {
             it("does not return another Member's Submission in secure queries", function() {
-              // Impersonate Member 1
-              gs.getSession().impersonate(member1Id);
+              expect(sub1Id).not.toBe("");
+              expect(sub2Id).not.toBe("");
 
-              // Query via GlideRecordSecure (enforces read ACLs and query rules)
+              // Query via GlideRecordSecure (enforces read ACLs and query rules as Member 1)
               var grSecure = new GlideRecordSecure(SUBMISSION_TABLE);
               grSecure.query();
 
