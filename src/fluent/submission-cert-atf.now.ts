@@ -80,8 +80,13 @@ export const testSubmissionCertUniqueness = Test(
         // ES mode: ES5 (Rhino)
         // Script context: outputs, steps, params, stepResult, assertEqual
         (function(outputs, steps, params, stepResult, assertEqual) {
+          var SUBMISSION_TABLE = "x_711398_se_submission";
           var CERT_ACQUISITION_TABLE = "x_711398_se_cert_acquisition";
-          var submissionId = "${submission.record_id}";
+          var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
+          grSeedSub.addQuery("description", "ATF cert acquisition uniqueness test");
+          grSeedSub.setLimit(1);
+          grSeedSub.query();
+          var submissionId = grSeedSub.next() ? grSeedSub.getUniqueValue() : "";
 
           describe("Cert Acquisition uniqueness", function() {
             it("contains exactly two distinct Certificate claims for this Submission", function() {

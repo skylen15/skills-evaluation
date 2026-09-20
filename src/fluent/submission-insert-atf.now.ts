@@ -15,7 +15,7 @@ export const testSubmissionInsertAndInProgress = Test(
     failOnServerError: true,
   },
   (atf) => {
-    const member = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-insert-create-member"],
       firstName: "ATF",
       lastName: "Submission Insert Member",
@@ -23,7 +23,7 @@ export const testSubmissionInsertAndInProgress = Test(
       impersonate: true,
     });
 
-    const firstSubmission = atf.server.recordInsert({
+    atf.server.recordInsert({
       $id: Now.ID["atf-submission-insert-first-submission"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -57,8 +57,16 @@ export const testSubmissionInsertAndInProgress = Test(
           var COMPLETED_STATE = "completed";
           var PROFICIENCY_NOT_APPLICABLE = "0";
           var QUERY_ROW_LIMIT = 201;
-          var submissionId = "${firstSubmission.record_id}";
-          var memberId = "${member.user}";
+          var grFirstSubmission = new GlideRecord(SUBMISSION_TABLE);
+          grFirstSubmission.addQuery("description", "ATF insert and in-progress gate");
+          grFirstSubmission.setLimit(1);
+          grFirstSubmission.query();
+          var submissionId = "";
+          var memberId = gs.getUserID();
+          if (grFirstSubmission.next()) {
+            submissionId = grFirstSubmission.getUniqueValue();
+            memberId = grFirstSubmission.getValue("assigned_to") || memberId;
+          }
 
           describe("Submission insert and in-progress guard", function() {
             it("creates one Not Applicable Skill Assessment per seeded Skill", function() {

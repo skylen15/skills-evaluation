@@ -23,7 +23,7 @@ export const testSubmissionScore = Test(
       impersonate: true,
     });
 
-    const submission = atf.server.recordInsert({
+    atf.server.recordInsert({
       $id: Now.ID["atf-submission-score-insert-submission"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -43,7 +43,11 @@ export const testSubmissionScore = Test(
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
           var SKILL_ASSESSMENT_TABLE = "x_711398_se_skill_assessment";
-          var submissionId = "${submission.record_id}";
+          var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
+          grSeedSub.addQuery("description", "ATF score recalculation test");
+          grSeedSub.setLimit(1);
+          grSeedSub.query();
+          var submissionId = grSeedSub.next() ? grSeedSub.getUniqueValue() : "";
 
           describe("Submission score recalculation", function() {
             it("recalculates score as sum of proficiency levels with unrated skills counting as 0", function() {

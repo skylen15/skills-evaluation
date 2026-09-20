@@ -15,7 +15,7 @@ export const testSubmissionGates = Test(
     failOnServerError: true,
   },
   (atf) => {
-    const member = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-gates-create-member"],
       firstName: "ATF",
       lastName: "Gates Member",
@@ -23,21 +23,21 @@ export const testSubmissionGates = Test(
       impersonate: true,
     });
 
-    const pm = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-gates-create-pm"],
       firstName: "ATF",
       lastName: "Gates PM",
       groups: [skillEvaluationPm],
     });
 
-    const coeHead = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-gates-create-coe"],
       firstName: "ATF",
       lastName: "Gates CoE Head",
       groups: [skillEvaluationCoe],
     });
 
-    const firstSubmission = atf.server.recordInsert({
+    atf.server.recordInsert({
       $id: Now.ID["atf-submission-gates-insert-first-submission"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -56,10 +56,24 @@ export const testSubmissionGates = Test(
         // Script context: outputs, steps, params, stepResult, assertEqual
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var memberId = "${member.user}";
-          var pmId = "${pm.user}";
-          var coeHeadId = "${coeHead.user}";
-          var firstSubId = "${firstSubmission.record_id}";
+          function getUserSysId(firstName, lastName) {
+            var grUser = new GlideRecord("sys_user");
+            grUser.addQuery("first_name", firstName);
+            grUser.addQuery("last_name", lastName);
+            grUser.setLimit(1);
+            grUser.query();
+            return grUser.next() ? grUser.getUniqueValue() : "";
+          }
+
+          var memberId = getUserSysId("ATF", "Gates Member");
+          var pmId = getUserSysId("ATF", "Gates PM");
+          var coeHeadId = getUserSysId("ATF", "Gates CoE Head");
+
+          var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
+          grSeedSub.addQuery("description", "First submission for lifecycle and sibling valid gate testing");
+          grSeedSub.setLimit(1);
+          grSeedSub.query();
+          var firstSubId = grSeedSub.next() ? grSeedSub.getUniqueValue() : "";
 
           var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
           var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");

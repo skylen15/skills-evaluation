@@ -72,6 +72,7 @@ declare global {
                     'atf-submission-delete-record': {
                         table: 'sys_atf_step'
                         id: '86ee740a27084e1b97bfa3f9507d0edc'
+                        deleted: true
                     }
                     'atf-submission-gates': {
                         table: 'sys_atf_test'
@@ -759,6 +760,7 @@ declare global {
                     {
                         table: 'sys_element_mapping'
                         id: '0374def62898465ea007a2e597149b98'
+                        deleted: true
                         key: {
                             id: '86ee740a27084e1b97bfa3f9507d0edc'
                             table: 'var__m_atf_input_variable_8df72288df60220062fe6c7a4df2636d'
@@ -1118,6 +1120,7 @@ declare global {
                     {
                         table: 'sys_variable_value'
                         id: '15e827bd393d4ab6b87873584627443f'
+                        deleted: true
                         key: {
                             document_key: '86ee740a27084e1b97bfa3f9507d0edc'
                             variable: '8f7d0f935320220002c6435723dc3471'
@@ -1565,6 +1568,7 @@ declare global {
                     {
                         table: 'sys_variable_value'
                         id: '2cf80675639e4ec399ee5881323b9da4'
+                        deleted: true
                         key: {
                             document_key: '86ee740a27084e1b97bfa3f9507d0edc'
                             variable: '3d6d8b935320220002c6435723dc349c'
@@ -2186,6 +2190,7 @@ declare global {
                     {
                         table: 'sys_variable_value'
                         id: '45ebe031bbff4ce384c628ef4211481c'
+                        deleted: true
                         key: {
                             document_key: '86ee740a27084e1b97bfa3f9507d0edc'
                             variable: 'c7e483f3671003007ba405225685effb'
@@ -4605,6 +4610,7 @@ declare global {
                     {
                         table: 'sys_variable_value'
                         id: 'bdb67d58ffa94b4b94b4dd9a1655f589'
+                        deleted: true
                         key: {
                             document_key: '86ee740a27084e1b97bfa3f9507d0edc'
                             variable: 'd13d0b935320220002c6435723dc34c8'

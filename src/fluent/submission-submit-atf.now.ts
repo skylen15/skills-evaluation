@@ -15,7 +15,7 @@ export const testSubmissionSubmitForReview = Test(
     failOnServerError: true,
   },
   (atf) => {
-    const member = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-submit-create-member"],
       firstName: "ATF",
       lastName: "Submit Member",
@@ -23,14 +23,14 @@ export const testSubmissionSubmitForReview = Test(
       impersonate: true,
     });
 
-    const otherUser = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-submit-create-other-user"],
       firstName: "ATF",
       lastName: "Submit Other User",
       groups: [skillEvaluationUser],
     });
 
-    const submission = atf.server.recordInsert({
+    atf.server.recordInsert({
       $id: Now.ID["atf-submission-submit-insert-submission"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -49,9 +49,25 @@ export const testSubmissionSubmitForReview = Test(
         // Script context: outputs, steps, params, stepResult, assertEqual
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submissionId = "${submission.record_id}";
-          var memberId = "${member.user}";
-          var otherUserId = "${otherUser.user}";
+          var grUser = new GlideRecord("sys_user");
+          grUser.addQuery("first_name", "ATF");
+          grUser.addQuery("last_name", "Submit Member");
+          grUser.setLimit(1);
+          grUser.query();
+          var memberId = grUser.next() ? grUser.getUniqueValue() : "";
+
+          var grOtherUser = new GlideRecord("sys_user");
+          grOtherUser.addQuery("first_name", "ATF");
+          grOtherUser.addQuery("last_name", "Submit Other User");
+          grOtherUser.setLimit(1);
+          grOtherUser.query();
+          var otherUserId = grOtherUser.next() ? grOtherUser.getUniqueValue() : "";
+
+          var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
+          grSeedSub.addQuery("assigned_to", memberId);
+          grSeedSub.setLimit(1);
+          grSeedSub.query();
+          var submissionId = grSeedSub.next() ? grSeedSub.getUniqueValue() : "";
           var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
 
           describe("Submission submit for review", function() {

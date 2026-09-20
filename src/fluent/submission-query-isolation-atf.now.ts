@@ -15,7 +15,7 @@ export const testSubmissionMemberQueryIsolation = Test(
     failOnServerError: true,
   },
   (atf) => {
-    const member1 = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-query-member-1"],
       firstName: "ATF",
       lastName: "Query Member One",
@@ -23,7 +23,7 @@ export const testSubmissionMemberQueryIsolation = Test(
       impersonate: true,
     });
 
-    const sub1 = atf.server.recordInsert({
+    atf.server.recordInsert({
       $id: Now.ID["atf-submission-query-insert-sub-1"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -41,7 +41,7 @@ export const testSubmissionMemberQueryIsolation = Test(
       impersonate: true,
     });
 
-    const sub2 = atf.server.recordInsert({
+    atf.server.recordInsert({
       $id: Now.ID["atf-submission-query-insert-sub-2"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -60,9 +60,18 @@ export const testSubmissionMemberQueryIsolation = Test(
         // Script context: outputs, steps, params, stepResult, assertEqual
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var member1Id = "${member1.user}";
-          var sub1Id = "${sub1.record_id}";
-          var sub2Id = "${sub2.record_id}";
+          var grSub1 = new GlideRecord(SUBMISSION_TABLE);
+          grSub1.addQuery("description", "Submission belonging to Member One");
+          grSub1.setLimit(1);
+          grSub1.query();
+          var sub1Id = grSub1.next() ? grSub1.getUniqueValue() : "";
+          var member1Id = grSub1.getValue("assigned_to");
+
+          var grSub2 = new GlideRecord(SUBMISSION_TABLE);
+          grSub2.addQuery("description", "Submission belonging to Member Two");
+          grSub2.setLimit(1);
+          grSub2.query();
+          var sub2Id = grSub2.next() ? grSub2.getUniqueValue() : "";
 
           describe("Member query isolation", function() {
             it("does not return another Member's Submission in secure queries", function() {

@@ -59,14 +59,6 @@ export const testSubmissionCascadeDelete = Test(
       user: admin.user,
     });
 
-    atf.server.recordDelete({
-      $id: Now.ID["atf-submission-delete-record"],
-      table: SUBMISSION_TABLE,
-      recordId: submission.record_id,
-      assert: "record_successfully_deleted",
-      enforceSecurity: true,
-    });
-
     atf.server.runServerSideScript({
       $id: Now.ID["atf-submission-delete-assertions"],
       jasmineVersion: "3.1",
@@ -78,22 +70,36 @@ export const testSubmissionCascadeDelete = Test(
           var SUBMISSION_TABLE = "x_711398_se_submission";
           var SKILL_ASSESSMENT_TABLE = "x_711398_se_skill_assessment";
           var CERT_ACQUISITION_TABLE = "x_711398_se_cert_acquisition";
-          var submissionId = "${submission.record_id}";
+          var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
+          grSeedSub.addQuery("description", "Submission targeted for cascade delete testing");
+          grSeedSub.setLimit(1);
+          grSeedSub.query();
+          var submissionId = grSeedSub.next() ? grSeedSub.getUniqueValue() : "";
 
           describe("Submission cascade delete", function() {
-            it("removes the Submission record", function() {
+            it("removes child records when Submission is deleted", function() {
+              expect(submissionId).not.toBe("");
+
+              var grAssessmentBefore = new GlideRecord(SKILL_ASSESSMENT_TABLE);
+              grAssessmentBefore.addQuery("submission", submissionId);
+              grAssessmentBefore.query();
+              expect(grAssessmentBefore.getRowCount()).toBeGreaterThan(0);
+
+              var grCertBefore = new GlideRecord(CERT_ACQUISITION_TABLE);
+              grCertBefore.addQuery("submission", submissionId);
+              grCertBefore.query();
+              expect(grCertBefore.getRowCount()).toBe(1);
+
+              expect(grSeedSub.deleteRecord()).toBe(true);
+
               var grSub = new GlideRecord(SUBMISSION_TABLE);
               expect(grSub.get(submissionId)).toBe(false);
-            });
 
-            it("removes all child Skill Assessments", function() {
               var grAssessment = new GlideRecord(SKILL_ASSESSMENT_TABLE);
               grAssessment.addQuery("submission", submissionId);
               grAssessment.query();
               expect(grAssessment.getRowCount()).toBe(0);
-            });
 
-            it("removes all child Cert Acquisitions", function() {
               var grAcquisition = new GlideRecord(CERT_ACQUISITION_TABLE);
               grAcquisition.addQuery("submission", submissionId);
               grAcquisition.query();

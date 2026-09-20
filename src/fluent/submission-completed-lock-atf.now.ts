@@ -15,7 +15,7 @@ export const testSubmissionCompletedImmutability = Test(
     failOnServerError: true,
   },
   (atf) => {
-    const member = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-lock-create-member"],
       firstName: "ATF",
       lastName: "Lock Member",
@@ -23,21 +23,21 @@ export const testSubmissionCompletedImmutability = Test(
       impersonate: true,
     });
 
-    const pm = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-lock-create-pm"],
       firstName: "ATF",
       lastName: "Lock PM",
       groups: [skillEvaluationPm],
     });
 
-    const coeHead = atf.server.createUser({
+    atf.server.createUser({
       $id: Now.ID["atf-submission-lock-create-coe"],
       firstName: "ATF",
       lastName: "Lock CoE Head",
       groups: [skillEvaluationCoe],
     });
 
-    const submission = atf.server.recordInsert({
+    atf.server.recordInsert({
       $id: Now.ID["atf-submission-lock-insert-submission"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -56,10 +56,24 @@ export const testSubmissionCompletedImmutability = Test(
         // Script context: outputs, steps, params, stepResult, assertEqual
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var memberId = "${member.user}";
-          var pmId = "${pm.user}";
-          var coeHeadId = "${coeHead.user}";
-          var submissionId = "${submission.record_id}";
+          function getUserSysId(firstName, lastName) {
+            var grUser = new GlideRecord("sys_user");
+            grUser.addQuery("first_name", firstName);
+            grUser.addQuery("last_name", lastName);
+            grUser.setLimit(1);
+            grUser.query();
+            return grUser.next() ? grUser.getUniqueValue() : "";
+          }
+
+          var memberId = getUserSysId("ATF", "Lock Member");
+          var pmId = getUserSysId("ATF", "Lock PM");
+          var coeHeadId = getUserSysId("ATF", "Lock CoE Head");
+
+          var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
+          grSeedSub.addQuery("description", "Original completed submission description");
+          grSeedSub.setLimit(1);
+          grSeedSub.query();
+          var submissionId = grSeedSub.next() ? grSeedSub.getUniqueValue() : "";
 
           var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
           var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");
