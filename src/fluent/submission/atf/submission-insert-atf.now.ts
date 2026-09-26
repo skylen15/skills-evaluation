@@ -77,7 +77,7 @@ export const testSubmissionInsertAndInProgress = Test(
               expect(memberId).toBe(gs.getUserID());
               expect(grFirstSubmission.getValue("state")).toBe(DRAFT_STATE);
               expect(grFirstSubmission.getValue("score")).toBe(INITIAL_SCORE);
-              expect(grFirstSubmission.getValue("level")).toBe("");
+              expect(grFirstSubmission.getValue("level") || "").toBe("");
               expect(grFirstSubmission.getValue("valid")).toBe(INITIAL_VALID);
               expect(grFirstSubmission.getValue("opened_by")).toBe(memberId);
             });

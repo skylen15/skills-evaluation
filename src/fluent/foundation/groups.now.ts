@@ -25,6 +25,7 @@ export const skillEvaluationPm = Record({
     name: SKILL_EVALUATION_PM_GROUP_NAME,
     description: "ECA project managers who take the first approval gate",
     active: true,
+    include_members: true,
   },
 });
 
@@ -36,6 +37,7 @@ export const skillEvaluationCoe = Record({
     name: SKILL_EVALUATION_COE_GROUP_NAME,
     description: "ECA CoE Heads who take the second approval gate",
     active: true,
+    include_members: true,
   },
 });
 

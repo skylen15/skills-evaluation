@@ -14,8 +14,7 @@ export const testSubmissionCompletedImmutability = Test(
     $id: Now.ID["atf-submission-completed-immutability"],
     name: "Submission - completed immutability",
     description:
-      "Verifies that a Completed Submission refuses any updates, including edits to Description and Work notes.",
-    active: true,
+      "Verifies that Submitted and Reviewed refuse mutations, Work notes is allowed before Completed, direct State/Valid forgery is refused, and Completed is fully immutable.",
     failOnServerError: true,
   },
   (atf) => {
@@ -62,20 +61,41 @@ export const testSubmissionCompletedImmutability = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/submit-for-review.ts");
           var grSub = new GlideRecord(SUBMISSION_TABLE);
           grSub.addQuery("assigned_to", gs.getUserID());
           grSub.setLimit(1);
           grSub.query();
           var subId = grSub.next() ? grSub.getUniqueValue() : "";
 
-          describe("Lock - member submit", function() {
-            it("moves state to submitted", function() {
+          describe("Lock - member submit and mutation refusal", function() {
+            it("moves state to submitted and enforces Submitted mutation boundary", function() {
               expect(subId).not.toBe("");
               submitModule.submitForReview(grSub);
               var grCheck = new GlideRecord(SUBMISSION_TABLE);
               expect(grCheck.get(subId)).toBe(true);
               expect(grCheck.getValue("state")).toBe("submitted");
+
+              // Description mutation refused in Submitted
+              expect(grCheck.description.canWrite()).toBe(false);
+              grCheck.setValue("description", "Hacked description in submitted");
+              grCheck.update();
+              expect(grCheck.isActionAborted()).toBe(true);
+
+              var grReload = new GlideRecord(SUBMISSION_TABLE);
+              expect(grReload.get(subId)).toBe(true);
+              expect(grReload.getValue("description")).toBe("Original completed submission description");
+
+              // Direct State and Valid forgery refused
+              expect(grCheck.state.canWrite()).toBe(false);
+              expect(grCheck.valid.canWrite()).toBe(false);
+              // Work notes allowed in Submitted
+              var grNote = new GlideRecord(SUBMISSION_TABLE);
+              expect(grNote.get(subId)).toBe(true);
+              expect(grNote.work_notes.canWrite()).toBe(true);
+              grNote.setValue("work_notes", "Member note in submitted state");
+              grNote.update();
+              expect(grNote.isActionAborted()).toBe(false);
             });
           });
         })(outputs, steps, params, stepResult, assertEqual);
@@ -94,20 +114,38 @@ export const testSubmissionCompletedImmutability = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");
+          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-pm-gate.ts");
           var grSub = new GlideRecord(SUBMISSION_TABLE);
           grSub.addQuery("description", "Original completed submission description");
           grSub.setLimit(1);
           grSub.query();
           var subId = grSub.next() ? grSub.getUniqueValue() : "";
 
-          describe("Lock - PM approve", function() {
-            it("moves state to reviewed", function() {
+          describe("Lock - PM review and mutation refusal", function() {
+            it("enforces Submitted boundary for PM then approves to reviewed", function() {
               expect(subId).not.toBe("");
-              pmModule.approveAtPmGate(grSub);
+              // PM Description mutation refused on Submitted
+              expect(grSub.description.canWrite()).toBe(false);
+              // PM Work notes allowed on Submitted
+              expect(grSub.work_notes.canWrite()).toBe(true);
+              grSub.setValue("work_notes", "PM note on submitted record");
+              grSub.update();
+              expect(grSub.isActionAborted()).toBe(false);
+
+              var grApprove = new GlideRecord(SUBMISSION_TABLE);
+              expect(grApprove.get(subId)).toBe(true);
+              pmModule.approveAtPmGate(grApprove);
               var grCheck = new GlideRecord(SUBMISSION_TABLE);
               expect(grCheck.get(subId)).toBe(true);
               expect(grCheck.getValue("state")).toBe("reviewed");
+
+              // PM Description mutation refused on Reviewed
+              expect(grCheck.description.canWrite()).toBe(false);
+              // PM Work notes allowed on Reviewed
+              expect(grCheck.work_notes.canWrite()).toBe(true);
+              grCheck.setValue("work_notes", "PM note on reviewed record");
+              grCheck.update();
+              expect(grCheck.isActionAborted()).toBe(false);
             });
           });
         })(outputs, steps, params, stepResult, assertEqual);
@@ -126,17 +164,27 @@ export const testSubmissionCompletedImmutability = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-coe-gate.ts");
+          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-coe-gate.ts");
           var grSub = new GlideRecord(SUBMISSION_TABLE);
           grSub.addQuery("description", "Original completed submission description");
           grSub.setLimit(1);
           grSub.query();
           var subId = grSub.next() ? grSub.getUniqueValue() : "";
 
-          describe("Lock - CoE Head approve", function() {
-            it("moves state to completed", function() {
+          describe("Lock - CoE Head approve and mutation refusal", function() {
+            it("enforces Reviewed boundary for CoE then approves to completed", function() {
               expect(subId).not.toBe("");
-              coeModule.approveAtCoeGate(grSub);
+              // CoE Description mutation refused on Reviewed
+              expect(grSub.description.canWrite()).toBe(false);
+              // CoE Work notes allowed on Reviewed
+              expect(grSub.work_notes.canWrite()).toBe(true);
+              grSub.setValue("work_notes", "CoE note on reviewed record");
+              grSub.update();
+              expect(grSub.isActionAborted()).toBe(false);
+
+              var grApprove = new GlideRecord(SUBMISSION_TABLE);
+              expect(grApprove.get(subId)).toBe(true);
+              coeModule.approveAtCoeGate(grApprove);
               var grCheck = new GlideRecord(SUBMISSION_TABLE);
               expect(grCheck.get(subId)).toBe(true);
               expect(grCheck.getValue("state")).toBe("completed");

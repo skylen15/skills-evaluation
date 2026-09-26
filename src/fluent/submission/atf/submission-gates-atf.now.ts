@@ -62,7 +62,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/submit-for-review.ts");
           var grSub = new GlideRecord(SUBMISSION_TABLE);
           grSub.addQuery("assigned_to", gs.getUserID());
           grSub.setLimit(1);
@@ -94,7 +94,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");
+          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-pm-gate.ts");
           var grSub = new GlideRecord(SUBMISSION_TABLE);
           grSub.addQuery("description", "First submission for lifecycle and sibling valid gate testing");
           grSub.setLimit(1);
@@ -127,7 +127,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-coe-gate.ts");
+          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-coe-gate.ts");
           var grSub = new GlideRecord(SUBMISSION_TABLE);
           grSub.addQuery("description", "First submission for lifecycle and sibling valid gate testing");
           grSub.setLimit(1);
@@ -161,7 +161,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/submit-for-review.ts");
           var grNew = new GlideRecord(SUBMISSION_TABLE);
           grNew.initialize();
           grNew.setValue("description", "Second submission testing reject and sibling clear");
@@ -193,7 +193,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");
+          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-pm-gate.ts");
           var grPm = new GlideRecord(SUBMISSION_TABLE);
           grPm.addQuery("description", "Second submission testing reject and sibling clear");
           grPm.setLimit(1);
@@ -226,7 +226,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/submit-for-review.ts");
           var grSub = new GlideRecord(SUBMISSION_TABLE);
           grSub.addQuery("description", "Second submission testing reject and sibling clear");
           grSub.setLimit(1);
@@ -258,7 +258,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");
+          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-pm-gate.ts");
           var grPm = new GlideRecord(SUBMISSION_TABLE);
           grPm.addQuery("description", "Second submission testing reject and sibling clear");
           grPm.setLimit(1);
@@ -290,7 +290,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-coe-gate.ts");
+          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-coe-gate.ts");
           var grCoe = new GlideRecord(SUBMISSION_TABLE);
           grCoe.addQuery("description", "Second submission testing reject and sibling clear");
           grCoe.setLimit(1);
@@ -322,7 +322,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/submit-for-review.ts");
           var grSub = new GlideRecord(SUBMISSION_TABLE);
           grSub.addQuery("description", "Second submission testing reject and sibling clear");
           grSub.setLimit(1);
@@ -354,7 +354,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");
+          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-pm-gate.ts");
           var grPm = new GlideRecord(SUBMISSION_TABLE);
           grPm.addQuery("description", "Second submission testing reject and sibling clear");
           grPm.setLimit(1);
@@ -386,7 +386,7 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-coe-gate.ts");
+          var coeModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-coe-gate.ts");
 
           var grFirst = new GlideRecord(SUBMISSION_TABLE);
           grFirst.addQuery("description", "First submission for lifecycle and sibling valid gate testing");
@@ -432,8 +432,8 @@ export const testSubmissionGates = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
-          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/take-pm-gate.ts");
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/submit-for-review.ts");
+          var pmModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/take-pm-gate.ts");
 
           var grPmSub = new GlideRecord(SUBMISSION_TABLE);
           grPmSub.initialize();
