@@ -105,6 +105,27 @@ export const testMemberSubmissionJourney = Test(
       relatedListTable: "x_711398_se_skill_assessment",
       notVisible: ["New"],
     });
+    // Validate Cert Acquisition evidence fields visibility on form
+    atf.form.openNewForm({
+      $id: Now.ID["atf-member-open-cert-acq-form"],
+      table: "x_711398_se_cert_acquisition",
+      formUI: "standard_ui",
+    });
+
+    atf.form.fieldStateValidation({
+      $id: Now.ID["atf-member-validate-cert-evidence-fields"],
+      table: "x_711398_se_cert_acquisition",
+      visible: ["certification_number", "certified_date", "servicenow_release"],
+      formUI: "standard_ui",
+    });
+
+    // Re-open saved draft submission to continue journey
+    atf.form.openExistingRecord({
+      $id: Now.ID["atf-member-reopen-draft-after-cert-check"],
+      table: SUBMISSION_TABLE,
+      recordId: submitResult.record_id,
+      formUI: "standard_ui",
+    });
 
     atf.form.uiActionVisibility({
       $id: Now.ID["atf-member-validate-submit-action"],

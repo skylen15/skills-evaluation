@@ -93,7 +93,7 @@ export const testSubmissionEmailNotifications = Test(
 
     atf.email.validateOutboundEmail({
       $id: Now.ID["atf-email-validate-created"],
-      conditions: "subjectLIKESkill Evaluation^subjectLIKEcreated",
+      conditions: "subjectLIKESkill Evaluation^subjectLIKEcreated^bodyLIKESubmission 1 for created",
       timeout: TWO_MINUTES_TIMEOUT,
     });
 
@@ -167,7 +167,8 @@ export const testSubmissionEmailNotifications = Test(
 
     atf.email.validateOutboundEmail({
       $id: Now.ID["atf-email-validate-submitted"],
-      conditions: "subjectLIKESkill Evaluation^subjectLIKEsubmitted for PM review",
+      conditions:
+        "subjectLIKESkill Evaluation^subjectLIKEsubmitted for PM review^bodyLIKESubmission 1 for created",
       timeout: TWO_MINUTES_TIMEOUT,
     });
 
@@ -241,7 +242,8 @@ export const testSubmissionEmailNotifications = Test(
 
     atf.email.validateOutboundEmail({
       $id: Now.ID["atf-email-validate-pm-approved"],
-      conditions: "subjectLIKESkill Evaluation^subjectLIKEreviewed by PM and awaiting CoE review",
+      conditions:
+        "subjectLIKESkill Evaluation^subjectLIKEreviewed by PM and awaiting CoE review^bodyLIKESubmission 1 for created",
       timeout: TWO_MINUTES_TIMEOUT,
     });
 
@@ -356,7 +358,8 @@ export const testSubmissionEmailNotifications = Test(
 
     atf.email.validateOutboundEmail({
       $id: Now.ID["atf-email-validate-pm-rejected"],
-      conditions: "subjectLIKESkill Evaluation^subjectLIKErejected by PM",
+      conditions:
+        "subjectLIKESkill Evaluation^subjectLIKErejected by PM^bodyLIKESubmission 2 for pm_rejected",
       timeout: TWO_MINUTES_TIMEOUT,
     });
 
@@ -502,7 +505,8 @@ export const testSubmissionEmailNotifications = Test(
 
     atf.email.validateOutboundEmail({
       $id: Now.ID["atf-email-validate-coe-rejected"],
-      conditions: "subjectLIKESkill Evaluation^subjectLIKErejected by CoE Head",
+      conditions:
+        "subjectLIKESkill Evaluation^subjectLIKErejected by CoE Head^bodyLIKESubmission 3 for coe_rejected",
       timeout: TWO_MINUTES_TIMEOUT,
     });
 

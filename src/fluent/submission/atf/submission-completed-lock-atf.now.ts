@@ -86,9 +86,26 @@ export const testSubmissionCompletedImmutability = Test(
               expect(grReload.get(subId)).toBe(true);
               expect(grReload.getValue("description")).toBe("Original completed submission description");
 
-              // Direct State and Valid forgery refused
+              // Direct State and Valid forgery refused via field ACL
               expect(grCheck.state.canWrite()).toBe(false);
               expect(grCheck.valid.canWrite()).toBe(false);
+
+              // Child content locked in Submitted: Skill Assessment & Cert Acquisition
+              var grSkillAss = new GlideRecord("x_711398_se_skill_assessment");
+              grSkillAss.addQuery("submission", subId);
+              grSkillAss.setLimit(1);
+              grSkillAss.query();
+              if (grSkillAss.next()) {
+                expect(grSkillAss.proficiency_level.canWrite()).toBe(false);
+              }
+
+              var grCertAcq = new GlideRecord("x_711398_se_cert_acquisition");
+              grCertAcq.addQuery("submission", subId);
+              grCertAcq.setLimit(1);
+              grCertAcq.query();
+              if (grCertAcq.next()) {
+                expect(grCertAcq.canWrite()).toBe(false);
+              }
               // Work notes allowed in Submitted
               var grNote = new GlideRecord(SUBMISSION_TABLE);
               expect(grNote.get(subId)).toBe(true);
@@ -141,7 +158,15 @@ export const testSubmissionCompletedImmutability = Test(
 
               // PM Description mutation refused on Reviewed
               expect(grCheck.description.canWrite()).toBe(false);
-              // PM Work notes allowed on Reviewed
+
+              // Child content locked in Reviewed: Skill Assessment
+              var grSkillAssRev = new GlideRecord("x_711398_se_skill_assessment");
+              grSkillAssRev.addQuery("submission", subId);
+              grSkillAssRev.setLimit(1);
+              grSkillAssRev.query();
+              if (grSkillAssRev.next()) {
+                expect(grSkillAssRev.proficiency_level.canWrite()).toBe(false);
+              }
               expect(grCheck.work_notes.canWrite()).toBe(true);
               grCheck.setValue("work_notes", "PM note on reviewed record");
               grCheck.update();

@@ -22,6 +22,7 @@ import {
 
 const SUBMISSION_TABLE = "x_711398_se_submission";
 
+// UI Action sys_id strings: @servicenow/sdk-core atf.form.clickUIAction requires string | Record<'sys_ui_action'>
 const PM_APPROVE_ACTION = "2873cba923a442daaacf36796847cd50";
 
 const PM_REJECT_ACTION = "04d6a7685c244e90a07719dda70bef82";
@@ -35,7 +36,7 @@ export const testReviewerAdminJourneys = Test(
     $id: Now.ID["atf-reviewer-admin-journeys"],
     name: "Reviewer and Admin journeys - UI acceptance",
     description:
-      "Validates PM and CoE real gate actions, wrong-role/wrong-state/self-approval refusal, direct se_admin module visibility without gate access, and Completed terminal lock.",
+      "Validates PM and CoE real gate actions, wrong-role/wrong-state/inactive-membership/self-approval refusal, direct se_admin module visibility without gate access, and Completed terminal lock.",
     active: true,
     failOnServerError: true,
   },
@@ -68,6 +69,16 @@ export const testReviewerAdminJourneys = Test(
       roles: [seAdmin],
     });
 
+    const inactivePmUser = atf.server.createUser({
+      $id: Now.ID["atf-raj-inactive-pm-user"],
+      firstName: "ATF",
+      lastName: "Inactive PM",
+      groups: [skillEvaluationPm],
+      fieldValues: {
+        active: false,
+      },
+    });
+
     // --- Scenario 1: Direct se_admin user module visibility and gate refusal ---
     atf.server.impersonate({
       $id: Now.ID["atf-raj-impersonate-admin-nav"],
@@ -95,7 +106,7 @@ export const testReviewerAdminJourneys = Test(
     });
 
     // Sub 1: For PM Reject journey
-    const sub1 = atf.server.recordInsert({
+    const pmRejectedSub = atf.server.recordInsert({
       $id: Now.ID["atf-raj-create-sub-1"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -106,7 +117,7 @@ export const testReviewerAdminJourneys = Test(
     });
 
     // Sub 2: For PM Approve + CoE Approve journey
-    const sub2 = atf.server.recordInsert({
+    const completedSub = atf.server.recordInsert({
       $id: Now.ID["atf-raj-create-sub-2"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -117,7 +128,7 @@ export const testReviewerAdminJourneys = Test(
     });
 
     // Sub 3: For CoE Reject journey
-    const sub3 = atf.server.recordInsert({
+    const coeRejectedSub = atf.server.recordInsert({
       $id: Now.ID["atf-raj-create-sub-3"],
       table: SUBMISSION_TABLE,
       fieldValues: {
@@ -159,7 +170,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-member-open-own-submitted"],
       table: SUBMISSION_TABLE,
-      recordId: sub1.record_id,
+      recordId: pmRejectedSub.record_id,
       formUI: "standard_ui",
     });
 
@@ -184,7 +195,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-admin-open-submitted"],
       table: SUBMISSION_TABLE,
-      recordId: sub1.record_id,
+      recordId: pmRejectedSub.record_id,
       formUI: "standard_ui",
     });
 
@@ -200,7 +211,32 @@ export const testReviewerAdminJourneys = Test(
       formUI: "standard_ui",
     });
 
-    // C. Wrong role: CoE Head opens Submitted record -> no gates visible
+    // C. Inactive membership: Inactive PM user opens Submitted record -> gate actions NOT visible
+    atf.server.impersonate({
+      $id: Now.ID["atf-raj-impersonate-inactive-pm"],
+      user: inactivePmUser.user,
+    });
+
+    atf.form.openExistingRecord({
+      $id: Now.ID["atf-raj-inactive-pm-open-submitted"],
+      table: SUBMISSION_TABLE,
+      recordId: pmRejectedSub.record_id,
+      formUI: "standard_ui",
+    });
+
+    atf.form.uiActionVisibility({
+      $id: Now.ID["atf-raj-inactive-pm-check-no-gates"],
+      table: SUBMISSION_TABLE,
+      notVisible: [
+        "pm_approve_submission",
+        "pm_reject_submission",
+        "coe_approve_submission",
+        "coe_reject_submission",
+      ],
+      formUI: "standard_ui",
+    });
+
+    // D. Wrong role: CoE Head opens Submitted record -> no gates visible
     atf.server.impersonate({
       $id: Now.ID["atf-raj-impersonate-coe-check-submitted"],
       user: coe.user,
@@ -209,7 +245,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-coe-open-submitted"],
       table: SUBMISSION_TABLE,
-      recordId: sub1.record_id,
+      recordId: pmRejectedSub.record_id,
       formUI: "standard_ui",
     });
 
@@ -234,7 +270,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-pm-open-sub-1"],
       table: SUBMISSION_TABLE,
-      recordId: sub1.record_id,
+      recordId: pmRejectedSub.record_id,
       formUI: "standard_ui",
     });
 
@@ -258,7 +294,7 @@ export const testReviewerAdminJourneys = Test(
     atf.server.recordValidation({
       $id: Now.ID["atf-raj-validate-sub-1-rejected-draft"],
       table: SUBMISSION_TABLE,
-      recordId: sub1.record_id,
+      recordId: pmRejectedSub.record_id,
       fieldValues: "state=draft",
       assert: "record_validated",
     });
@@ -267,7 +303,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-pm-open-sub-1-draft"],
       table: SUBMISSION_TABLE,
-      recordId: sub1.record_id,
+      recordId: pmRejectedSub.record_id,
       formUI: "standard_ui",
     });
 
@@ -287,7 +323,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-pm-open-sub-2"],
       table: SUBMISSION_TABLE,
-      recordId: sub2.record_id,
+      recordId: completedSub.record_id,
       formUI: "standard_ui",
     });
 
@@ -303,7 +339,7 @@ export const testReviewerAdminJourneys = Test(
     atf.server.recordValidation({
       $id: Now.ID["atf-raj-validate-sub-2-reviewed"],
       table: SUBMISSION_TABLE,
-      recordId: sub2.record_id,
+      recordId: completedSub.record_id,
       fieldValues: "state=reviewed",
       assert: "record_validated",
     });
@@ -312,7 +348,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-pm-open-sub-3"],
       table: SUBMISSION_TABLE,
-      recordId: sub3.record_id,
+      recordId: coeRejectedSub.record_id,
       formUI: "standard_ui",
     });
 
@@ -327,7 +363,7 @@ export const testReviewerAdminJourneys = Test(
     atf.server.recordValidation({
       $id: Now.ID["atf-raj-validate-sub-3-reviewed"],
       table: SUBMISSION_TABLE,
-      recordId: sub3.record_id,
+      recordId: coeRejectedSub.record_id,
       fieldValues: "state=reviewed",
       assert: "record_validated",
     });
@@ -341,7 +377,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-coe-open-sub-3"],
       table: SUBMISSION_TABLE,
-      recordId: sub3.record_id,
+      recordId: coeRejectedSub.record_id,
       formUI: "standard_ui",
     });
 
@@ -365,7 +401,7 @@ export const testReviewerAdminJourneys = Test(
     atf.server.recordValidation({
       $id: Now.ID["atf-raj-validate-sub-3-draft"],
       table: SUBMISSION_TABLE,
-      recordId: sub3.record_id,
+      recordId: coeRejectedSub.record_id,
       fieldValues: "state=draft",
       assert: "record_validated",
     });
@@ -374,7 +410,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-coe-open-sub-2"],
       table: SUBMISSION_TABLE,
-      recordId: sub2.record_id,
+      recordId: completedSub.record_id,
       formUI: "standard_ui",
     });
 
@@ -398,7 +434,7 @@ export const testReviewerAdminJourneys = Test(
     atf.server.recordValidation({
       $id: Now.ID["atf-raj-validate-sub-2-completed"],
       table: SUBMISSION_TABLE,
-      recordId: sub2.record_id,
+      recordId: completedSub.record_id,
       fieldValues: "state=completed^valid=true",
       assert: "record_validated",
     });
@@ -407,7 +443,7 @@ export const testReviewerAdminJourneys = Test(
     atf.form.openExistingRecord({
       $id: Now.ID["atf-raj-coe-open-completed-sub-2"],
       table: SUBMISSION_TABLE,
-      recordId: sub2.record_id,
+      recordId: completedSub.record_id,
       formUI: "standard_ui",
     });
 
