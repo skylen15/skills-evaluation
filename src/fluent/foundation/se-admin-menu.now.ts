@@ -3,7 +3,7 @@ import { Record } from "@servicenow/sdk/core";
 import { skillEvaluationMenu } from "../submission/submission-menu.now.ts";
 import { SE_ADMIN_ROLE_NAME } from "./roles.now.ts";
 
-Record({
+export const moduleSeAdminSeparator = Record({
   $id: Now.ID["module-se-admin-separator"],
   table: "sys_app_module",
   data: {
@@ -16,7 +16,7 @@ Record({
   },
 });
 
-Record({
+export const moduleProductLines = Record({
   $id: Now.ID["module-product-lines"],
   table: "sys_app_module",
   data: {
@@ -31,7 +31,7 @@ Record({
   },
 });
 
-Record({
+export const moduleSkills = Record({
   $id: Now.ID["module-skills"],
   table: "sys_app_module",
   data: {
@@ -46,7 +46,7 @@ Record({
   },
 });
 
-Record({
+export const moduleCertificates = Record({
   $id: Now.ID["module-certificates"],
   table: "sys_app_module",
   data: {
@@ -61,7 +61,7 @@ Record({
   },
 });
 
-Record({
+export const moduleLevels = Record({
   $id: Now.ID["module-levels"],
   table: "sys_app_module",
   data: {

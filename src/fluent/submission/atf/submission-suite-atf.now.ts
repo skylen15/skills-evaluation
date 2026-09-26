@@ -3,6 +3,7 @@ import { TestSuite } from "@servicenow/sdk/core";
 import { testSubmissionCascadeDelete } from "./submission-cascade-delete-atf.now.ts";
 import { testSubmissionCertUniqueness } from "./submission-cert-atf.now.ts";
 import { testSubmissionCompletedImmutability } from "./submission-completed-lock-atf.now.ts";
+import { testSubmissionEmailNotifications } from "./submission-email-notifications-atf.now.ts";
 import { testSubmissionGates } from "./submission-gates-atf.now.ts";
 import { testSubmissionInsertAndInProgress } from "./submission-insert-atf.now.ts";
 import { testMemberSubmissionJourney } from "./submission-member-journey-atf.now.ts";
@@ -28,5 +29,6 @@ export const skillEvaluationTestSuite = TestSuite({
     testSubmissionCascadeDelete,
     testMemberSubmissionJourney,
     testReviewerAdminJourneys,
+    testSubmissionEmailNotifications,
   ],
 });
