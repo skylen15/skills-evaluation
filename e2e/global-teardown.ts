@@ -1,11 +1,14 @@
 import fs from "node:fs";
+import path from "node:path";
 
 import type { FullConfig } from "@playwright/test";
 
-import { INSTANCE_URL } from "../playwright.config.ts";
+import { AUTH_DIR, INSTANCE_URL } from "../playwright.config.ts";
 import {
+  API_BASE_URL,
   CLEANUP_MANIFEST_PATH,
   formatAsciiStats,
+  getAdminApiHeaders,
   readCleanupManifest,
   REVERSE_DELETE_ORDER,
   type TableApiResponse,
@@ -31,7 +34,9 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
     sys_journal_field: 0,
   };
 
-  if (!adminPassword || manifest.runs.length === 0) {
+  const sessionFile = path.resolve(AUTH_DIR, "admin-session.json");
+
+  if ((!adminPassword && !fs.existsSync(sessionFile)) || manifest.runs.length === 0) {
     if (fs.existsSync(CLEANUP_MANIFEST_PATH)) {
       try {
         fs.unlinkSync(CLEANUP_MANIFEST_PATH);
@@ -47,12 +52,7 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
     return;
   }
 
-  const authHeader = `Basic ${Buffer.from(`${adminUser}:${adminPassword}`).toString("base64")}`;
-
-  const headers: HeadersInit = {
-    Authorization: authHeader,
-    Accept: "application/json",
-  };
+  const headers: HeadersInit = getAdminApiHeaders();
 
   // Aggregate all correlation tokens and registered sys_ids across all runs
   const allCorrelationTokens = manifest.runs.map((r) => r.correlationToken).filter(Boolean);
@@ -80,8 +80,7 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
       const subQuery = `descriptionLIKE${encodeURIComponent(token)}^ORwork_notesLIKE${encodeURIComponent(token)}`;
 
       const subRes = await fetch(
-        `${INSTANCE_URL}/api/now/table/x_711398_se_submission?sysparm_query=${subQuery}&sysparm_fields=sys_id`,
-        { headers },
+        `${API_BASE_URL}/api/now/table/x_711398_se_submission?sysparm_query=${subQuery}&sysparm_fields=sys_id`,
       );
 
       if (subRes.ok) {
@@ -108,8 +107,7 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
     try {
       // Discover child skill assessments
       const saRes = await fetch(
-        `${INSTANCE_URL}/api/now/table/x_711398_se_skill_assessment?sysparm_query=submissionIN${subInList}&sysparm_fields=sys_id`,
-        { headers },
+        `${API_BASE_URL}/api/now/table/x_711398_se_skill_assessment?sysparm_query=submissionIN${subInList}&sysparm_fields=sys_id`,
       );
 
       if (saRes.ok) {
@@ -125,8 +123,7 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
 
       // Discover child cert acquisitions
       const caRes = await fetch(
-        `${INSTANCE_URL}/api/now/table/x_711398_se_cert_acquisition?sysparm_query=submissionIN${subInList}&sysparm_fields=sys_id`,
-        { headers },
+        `${API_BASE_URL}/api/now/table/x_711398_se_cert_acquisition?sysparm_query=submissionIN${subInList}&sysparm_fields=sys_id`,
       );
 
       if (caRes.ok) {
@@ -142,8 +139,7 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
 
       // Discover journal entries
       const jfRes = await fetch(
-        `${INSTANCE_URL}/api/now/table/sys_journal_field?sysparm_query=element_idIN${subInList}&sysparm_fields=sys_id`,
-        { headers },
+        `${API_BASE_URL}/api/now/table/sys_journal_field?sysparm_query=element_idIN${subInList}&sysparm_fields=sys_id`,
       );
 
       if (jfRes.ok) {
@@ -166,8 +162,7 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
   for (const token of allCorrelationTokens) {
     try {
       const jfRes = await fetch(
-        `${INSTANCE_URL}/api/now/table/sys_journal_field?sysparm_query=valueLIKE${encodeURIComponent(token)}&sysparm_fields=sys_id`,
-        { headers },
+        `${API_BASE_URL}/api/now/table/sys_journal_field?sysparm_query=valueLIKE${encodeURIComponent(token)}&sysparm_fields=sys_id`,
       );
 
       if (jfRes.ok) {
@@ -191,7 +186,7 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
 
     for (const sysId of sysIds) {
       try {
-        const delRes = await fetch(`${INSTANCE_URL}/api/now/table/${table}/${sysId}`, {
+        const delRes = await fetch(`${API_BASE_URL}/api/now/table/${table}/${sysId}`, {
           method: "DELETE",
           headers,
         });

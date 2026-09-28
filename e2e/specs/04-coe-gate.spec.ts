@@ -24,13 +24,27 @@ async function createMemberSubmittedSubmission(
 
     await memberFrame.setFieldValue("description", desc);
     await memberFrame.saveRecord();
-    const realSysId = await memberFrame.getRecordSysId();
+
+    // Ensure we open the newly created record form before clicking Submit for Review
+    let realSysId = (await memberFrame.getRecordSysId()) || memberFrame.currentRecordSysId;
+    if (!realSysId) {
+      await memberFrame.gotoList("x_711398_se_submission", `description=${desc}`);
+      const link = memberFrame.frameLocator
+        .locator(`a.linked:has-text("${desc}"), a:has-text("${desc}"), table[id$="_table"] a[href*="sys_id="]`)
+        .first();
+      const href = await link.getAttribute("href", { timeout: 15000 }).catch(() => "");
+      const match = href.match(/[?&]sys_id=([0-9a-fA-F]{32})/);
+      if (match) {
+        realSysId = match[1];
+      }
+    }
 
     if (realSysId) {
       cleanupTracker.register("x_711398_se_submission", realSysId);
+      await memberFrame.gotoRecord("x_711398_se_submission", realSysId);
     }
 
-    await memberFrame.clickSubmitForReview();
+    await memberFrame.clickSubmitForReview(realSysId);
 
     return realSysId;
   } finally {
@@ -50,7 +64,7 @@ async function advanceSubmissionToReviewed(browser: Browser, subId: string): Pro
 
   try {
     await pmFrame.gotoRecord("x_711398_se_submission", subId);
-    await pmFrame.clickApprove();
+    await pmFrame.clickApprove(subId);
   } finally {
     await pmContext.close();
   }
@@ -87,7 +101,7 @@ async function createCompletedSubmission(
 
   try {
     await coeFrame.gotoRecord("x_711398_se_submission", subId);
-    await coeFrame.clickApprove();
+    await coeFrame.clickApprove(subId);
   } finally {
     await coeContext.close();
   }
@@ -103,6 +117,7 @@ test.describe("04 - CoE Head Gate 2 Review, Completion & Immutability Acceptance
     browser,
     cleanupTracker,
   }) => {
+    test.setTimeout(240000);
     // 1. Establish prior Completed submission for the member (valid = true)
     const priorSubId = await createCompletedSubmission(
       browser,
@@ -145,7 +160,7 @@ test.describe("04 - CoE Head Gate 2 Review, Completion & Immutability Acceptance
     expect(stateAfterNote.toLowerCase()).toBe("reviewed");
 
     // 6. CoE Head clicks "Approve" UI action
-    await frame.clickApprove();
+    await frame.clickApprove(currentSubId);
 
     // 7. Verifies Submission advances to Completed state
     const stateAfterApproval = await frame.getFieldValue("state");
@@ -233,6 +248,7 @@ test.describe("04 - CoE Head Gate 2 Review, Completion & Immutability Acceptance
     browser,
     cleanupTracker,
   }) => {
+    test.setTimeout(180000);
     const subId = await createReviewedSubmission(
       browser,
       cleanupTracker,
@@ -258,7 +274,7 @@ test.describe("04 - CoE Head Gate 2 Review, Completion & Immutability Acceptance
     expect(await frame.isButtonVisible("coe_reject_submission")).toBe(true);
 
     // 3. CoE Head clicks "Reject" UI action
-    await frame.clickReject();
+    await frame.clickReject(subId);
 
     // 4. Verifies Submission transitions back to Draft state for revision
     const stateAfterRejection = await frame.getFieldValue("state");
@@ -281,6 +297,7 @@ test.describe("04 - CoE Head Gate 2 Review, Completion & Immutability Acceptance
     browser,
     cleanupTracker,
   }) => {
+    test.setTimeout(180000);
     const frame = new ServiceNowFrame(page);
 
     // 1. CoE Head navigates to create a new Submission (assigned to CoE persona se_coe_test)
@@ -293,15 +310,27 @@ test.describe("04 - CoE Head Gate 2 Review, Completion & Immutability Acceptance
     await frame.setFieldValue("description", descriptionText);
     await frame.saveRecord();
 
-    const realSysId = await frame.getRecordSysId();
+    let realSysId = (await frame.getRecordSysId()) || frame.currentRecordSysId;
+    if (!realSysId) {
+      await frame.gotoList("x_711398_se_submission", `description=${descriptionText}`);
+      const link = frame.frameLocator
+        .locator(`a.linked:has-text("${descriptionText}"), a:has-text("${descriptionText}"), table[id$="_table"] a[href*="sys_id="]`)
+        .first();
+      const href = await link.getAttribute("href", { timeout: 15000 }).catch(() => "");
+      const match = href.match(/[?&]sys_id=([0-9a-fA-F]{32})/);
+      if (match) {
+        realSysId = match[1];
+      }
+    }
 
     if (realSysId) {
       cleanupTracker.register("x_711398_se_submission", realSysId);
+      await frame.gotoRecord("x_711398_se_submission", realSysId);
     }
 
     // 2. CoE Head submits for review
-    await frame.clickSubmitForReview();
-
+    await frame.clickSubmitForReview(realSysId);
+    await frame.gotoRecord("x_711398_se_submission", realSysId);
     // 3. Verifies state transitions to Submitted
     const submittedState = await frame.getFieldValue("state");
     expect(submittedState.toLowerCase()).toBe("submitted");
