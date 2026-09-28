@@ -1,5 +1,7 @@
 import type { FrameLocator, Locator, Page } from "@playwright/test";
 
+import { ServiceNowNavigator } from "./navigator.ts";
+
 interface GFormApi {
   getValue: (field: string) => string;
   setValue?: (field: string, value: string) => void;
@@ -19,9 +21,11 @@ declare global {
  */
 export class ServiceNowFrame {
   readonly page: Page;
+  readonly navigator: ServiceNowNavigator;
 
   constructor(page: Page) {
     this.page = page;
+    this.navigator = new ServiceNowNavigator(page);
   }
 
   /** Direct FrameLocator pointing to the primary content iframe #gsft_main */
