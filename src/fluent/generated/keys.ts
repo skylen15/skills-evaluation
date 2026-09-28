@@ -1206,6 +1206,30 @@ declare global {
                         table: 'sys_script'
                         id: 'd573187f21b04502bd65ef53bd2f8fd2'
                     }
+                    'seed-user-coe': {
+                        table: 'sys_user'
+                        id: 'f2e5909eba314ea58711d636da11503e'
+                    }
+                    'seed-user-coe-grmember': {
+                        table: 'sys_user_grmember'
+                        id: 'f4fc0d16f4474057a79c54e03eecc369'
+                    }
+                    'seed-user-member': {
+                        table: 'sys_user'
+                        id: '92991c8ff7414f66a02253617b3f73d3'
+                    }
+                    'seed-user-member-grmember': {
+                        table: 'sys_user_grmember'
+                        id: '02760aa02cd54abba0a4823da6e19489'
+                    }
+                    'seed-user-pm': {
+                        table: 'sys_user'
+                        id: '3624d4afd9ee4b96995837c34e815f3e'
+                    }
+                    'seed-user-pm-grmember': {
+                        table: 'sys_user_grmember'
+                        id: '0eff101bf7994645ba699ba7deaeeded'
+                    }
                     'skill-assessment-create-se-user': {
                         table: 'sys_security_acl'
                         id: 'fd063724a7d8455e86d9dc6b174ccee1'

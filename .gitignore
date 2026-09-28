@@ -13,6 +13,9 @@ target/
 coverage/
 .nyc_output/
 
+.auth/
+test-results/
+playwright-report/
 # Environment and secrets
 .env
 .env.*
