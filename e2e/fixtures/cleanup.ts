@@ -1,6 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { test as base, expect } from "@playwright/test";
 
-import { INSTANCE_URL } from "../../playwright.config.ts";
+import { AUTH_DIR, INSTANCE_URL } from "../../playwright.config.ts";
 
 export const TRACKED_TABLES = [
   "x_711398_se_submission",
@@ -12,7 +15,7 @@ export const TRACKED_TABLES = [
 
 export type TrackedTable = (typeof TRACKED_TABLES)[number];
 
-const REVERSE_DELETE_ORDER: TrackedTable[] = [
+export const REVERSE_DELETE_ORDER: TrackedTable[] = [
   "sys_email",
   "sys_journal_field",
   "x_711398_se_cert_acquisition",
@@ -24,7 +27,7 @@ interface SysIdItem {
   sys_id: string;
 }
 
-interface TableApiResponse<T> {
+export interface TableApiResponse<T> {
   result?: T;
 }
 
@@ -57,6 +60,48 @@ export function formatAsciiStats(byTable: Record<TrackedTable, number>): string 
   return rows.join("\n");
 }
 
+export const CLEANUP_MANIFEST_PATH = path.resolve(AUTH_DIR, "cleanup-manifest.json");
+
+export interface CleanupManifestEntry {
+  runId: string;
+  correlationToken: string;
+  registered: Record<TrackedTable, string[]>;
+}
+
+export interface CleanupManifest {
+  runs: CleanupManifestEntry[];
+}
+
+export function readCleanupManifest(): CleanupManifest {
+  try {
+    if (fs.existsSync(CLEANUP_MANIFEST_PATH)) {
+      const content = fs.readFileSync(CLEANUP_MANIFEST_PATH, "utf8");
+
+      // SAFETY: Manifest file is serialized as CleanupManifest schema.
+      return JSON.parse(content) as CleanupManifest;
+    }
+  } catch {
+    // Corrupted or unreadable file returns empty manifest
+  }
+
+  return { runs: [] };
+}
+
+export function writeCleanupManifest(manifest: CleanupManifest): void {
+  try {
+    const dir = path.dirname(CLEANUP_MANIFEST_PATH);
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    fs.writeFileSync(CLEANUP_MANIFEST_PATH, JSON.stringify(manifest, null, 2), "utf8");
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[DataCleanupTracker] Failed to write cleanup manifest: ${message}`);
+  }
+}
+
 export class DataCleanupTracker {
   readonly runId: string;
   readonly correlationToken: string;
@@ -70,6 +115,8 @@ export class DataCleanupTracker {
     for (const table of TRACKED_TABLES) {
       this.registeredRecords.set(table, new Set<string>());
     }
+
+    this.persistManifest();
   }
 
   generateRunId(): string {
@@ -79,7 +126,33 @@ export class DataCleanupTracker {
   register(table: TrackedTable, sysId: string): void {
     if (this.registeredRecords.has(table)) {
       this.registeredRecords.get(table)?.add(sysId);
+      this.persistManifest();
     }
+  }
+
+  private persistManifest(): void {
+    const manifest = readCleanupManifest();
+    const entry = manifest.runs.find((r) => r.runId === this.runId);
+
+    const registeredMap: Record<TrackedTable, string[]> = {
+      x_711398_se_submission: this.getRegistered("x_711398_se_submission"),
+      x_711398_se_skill_assessment: this.getRegistered("x_711398_se_skill_assessment"),
+      x_711398_se_cert_acquisition: this.getRegistered("x_711398_se_cert_acquisition"),
+      sys_journal_field: this.getRegistered("sys_journal_field"),
+      sys_email: this.getRegistered("sys_email"),
+    };
+
+    if (entry) {
+      entry.registered = registeredMap;
+    } else {
+      manifest.runs.push({
+        runId: this.runId,
+        correlationToken: this.correlationToken,
+        registered: registeredMap,
+      });
+    }
+
+    writeCleanupManifest(manifest);
   }
 
   getRegistered(table: TrackedTable): string[] {
@@ -231,58 +304,134 @@ export class DataCleanupTracker {
       const sysIds = Array.from(discovered[table]);
 
       for (const sysId of sysIds) {
-        try {
-          const delRes = await fetch(`${INSTANCE_URL}/api/now/table/${table}/${sysId}`, {
-            method: "DELETE",
-            headers,
-          });
+        const delRes = await fetch(`${INSTANCE_URL}/api/now/table/${table}/${sysId}`, {
+          method: "DELETE",
+          headers,
+        });
 
-          if (delRes.status === 204 || delRes.status === 200 || delRes.ok) {
-            stats[table] += 1;
-          }
-        } catch (delErr: unknown) {
-          const message = delErr instanceof Error ? delErr.message : String(delErr);
-
-          console.warn(
-            `[DataCleanupTracker] Failed to delete ${table} record ${sysId}: ${message}`,
+        if (delRes.status >= 200 && delRes.status < 300) {
+          stats[table] += 1;
+        } else {
+          const errBody = await delRes.text().catch(() => "");
+          throw new Error(
+            `[DataCleanupTracker] DELETE failed for ${table}/${sysId}: HTTP ${delRes.status} ${delRes.statusText} - ${errBody}`,
           );
         }
       }
     }
 
     // 3. Verify zero residual records remain on instance matching this run
-    let residualCount = 0;
-
-    try {
-      const verifySub = await fetch(
-        `${INSTANCE_URL}/api/now/table/x_711398_se_submission?sysparm_query=descriptionLIKE${encodeURIComponent(this.correlationToken)}&sysparm_fields=sys_id`,
-        { headers },
-      );
-
-      if (verifySub.ok) {
-        // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
-        const verifyData = (await verifySub.json()) as TableApiResponse<SysIdItem[]>;
-
-        if (Array.isArray(verifyData.result)) {
-          residualCount += verifyData.result.length;
-        }
-      }
-    } catch {
-      // verification probe failure handled
-    }
+    await this.verifyZeroResidual(authHeader);
 
     const totalDeleted = Object.values(stats).reduce((acc, curr) => acc + curr, 0);
     const tableOutput = formatAsciiStats(stats);
 
     console.log(tableOutput);
 
-    if (residualCount > 0) {
-      throw new Error(
-        `[DataCleanupTracker] Residual test records detected after rollback: ${residualCount} records remain.`,
-      );
+    return { byTable: stats, totalDeleted };
+  }
+
+  /**
+   * Verifies that zero residual records remain on the instance across all 5 tracked tables.
+   * Throws an error if any records are found or if any verification query fails.
+   */
+  async verifyZeroResidual(customAuthHeader?: string): Promise<void> {
+    const adminUser = process.env.SN_ADMIN_USER || "admin";
+    const adminPassword = process.env.SN_ADMIN_PASSWORD;
+
+    if (!adminPassword) {
+      return;
     }
 
-    return { byTable: stats, totalDeleted };
+    const authHeader =
+      customAuthHeader ||
+      `Basic ${Buffer.from(`${adminUser}:${adminPassword}`).toString("base64")}`;
+
+    const headers: HeadersInit = {
+      Authorization: authHeader,
+      Accept: "application/json",
+    };
+
+    const residuals: Array<{ table: TrackedTable; count: number; sysIds: string[] }> = [];
+
+    // Query each of the 5 tracked tables by correlation token and registered sys_ids
+    for (const table of TRACKED_TABLES) {
+      const regIds = this.getRegistered(table);
+      const queryParts: string[] = [];
+
+      // 1. Check registered sys_ids
+      if (regIds.length > 0) {
+        queryParts.push(`sys_idIN${regIds.join(",")}`);
+      }
+
+      // 2. Check correlation token / parent references
+      if (table === "x_711398_se_submission") {
+        queryParts.push(
+          `descriptionLIKE${encodeURIComponent(this.correlationToken)}^ORwork_notesLIKE${encodeURIComponent(this.correlationToken)}`,
+        );
+      } else if (table === "sys_journal_field") {
+        queryParts.push(`valueLIKE${encodeURIComponent(this.correlationToken)}`);
+        const subIds = this.getRegistered("x_711398_se_submission");
+
+        if (subIds.length > 0) {
+          queryParts.push(`element_idIN${subIds.join(",")}`);
+        }
+      } else if (table === "sys_email") {
+        queryParts.push(
+          `subjectLIKE${encodeURIComponent(this.correlationToken)}^ORbodyLIKE${encodeURIComponent(this.correlationToken)}`,
+        );
+        const subIds = this.getRegistered("x_711398_se_submission");
+
+        if (subIds.length > 0) {
+          queryParts.push(`instanceIN${subIds.join(",")}`);
+        }
+      } else {
+        // x_711398_se_skill_assessment and x_711398_se_cert_acquisition
+        const subIds = this.getRegistered("x_711398_se_submission");
+
+        if (subIds.length > 0) {
+          queryParts.push(`submissionIN${subIds.join(",")}`);
+        }
+      }
+
+      if (queryParts.length === 0) {
+        continue;
+      }
+
+      const queryString = queryParts.join("^OR");
+      const url = `${INSTANCE_URL}/api/now/table/${table}?sysparm_query=${queryString}&sysparm_fields=sys_id`;
+
+      const res = await fetch(url, { headers });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(
+          `[DataCleanupTracker] verifyZeroResidual query failed on ${table}: HTTP ${res.status} ${res.statusText} - ${errText}`,
+        );
+      }
+
+      // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
+      const data = (await res.json()) as TableApiResponse<SysIdItem[]>;
+      const foundRecords = Array.isArray(data.result) ? data.result : [];
+
+      if (foundRecords.length > 0) {
+        residuals.push({
+          table,
+          count: foundRecords.length,
+          sysIds: foundRecords.map((r) => r.sys_id),
+        });
+      }
+    }
+
+    if (residuals.length > 0) {
+      const summary = residuals
+        .map((r) => `${r.table}: ${r.count} residual record(s) [${r.sysIds.join(", ")}]`)
+        .join("; ");
+
+      throw new Error(
+        `[DataCleanupTracker] Residual test records detected after rollback: ${summary}`,
+      );
+    }
   }
 }
 

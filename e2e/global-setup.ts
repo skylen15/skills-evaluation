@@ -216,29 +216,35 @@ async function resolvePersonaSysIds(
 }
 
 export default async function globalSetup(_config: FullConfig): Promise<void> {
-  const adminUser = process.env.SN_ADMIN_USER || "admin";
+  const instanceUrl = process.env.SN_INSTANCE_URL;
+  const adminUser = process.env.SN_ADMIN_USER;
   const adminPassword = process.env.SN_ADMIN_PASSWORD;
+
+  const missing: string[] = [];
+
+  if (!instanceUrl) {
+    missing.push("SN_INSTANCE_URL");
+  }
+
+  if (!adminUser) {
+    missing.push("SN_ADMIN_USER");
+  }
+
+  if (!adminPassword) {
+    missing.push("SN_ADMIN_PASSWORD");
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `[ServiceNow E2E] Missing required environment variable(s): ${missing.join(
+        ", ",
+      )}. Real ServiceNow instance credentials are required per ADR 0009.`,
+    );
+  }
 
   // Guarantee .auth directory exists
   if (!fs.existsSync(AUTH_DIR)) {
     fs.mkdirSync(AUTH_DIR, { recursive: true });
-  }
-
-  // Pre-seed storage state placeholder files so Playwright test discovery never crashes on missing files
-  const placeholderState = JSON.stringify({ cookies: [], origins: [] }, null, 2);
-
-  for (const filePath of Object.values(AUTH_FILES)) {
-    if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, placeholderState, "utf8");
-    }
-  }
-
-  if (!adminPassword) {
-    console.log(
-      "[ServiceNow E2E] SN_ADMIN_PASSWORD not set. Maintained placeholder storage states for offline/static verification.",
-    );
-
-    return;
   }
 
   const basicAuth = `Basic ${Buffer.from(`${adminUser}:${adminPassword}`).toString("base64")}`;
@@ -295,6 +301,12 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
       }
     }
 
+    if (!g_ck) {
+      throw new Error(
+        "[ServiceNow E2E] Failed to acquire valid CSRF token (window.g_ck) after admin login. Cannot proceed with impersonation.",
+      );
+    }
+
     // Save admin storage state
     await adminContext.storageState({ path: AUTH_FILES.admin });
     console.log(
@@ -307,11 +319,9 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
       const userSysId = personaSysIds[personaKey];
 
       if (!userSysId) {
-        console.warn(
-          `[ServiceNow E2E] Skipping impersonation for ${config.label}: sys_id not found.`,
+        throw new Error(
+          `[ServiceNow E2E] Impersonation failed for ${config.label}: sys_id could not be resolved or provisioned.`,
         );
-
-        continue;
       }
 
       console.log(
@@ -329,7 +339,13 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
         waitUntil: "domcontentloaded",
       });
 
-      const userToken = (await personaPage.evaluate(() => window.g_ck)) || g_ck || "";
+      const userToken = (await personaPage.evaluate(() => window.g_ck || window.NOW?.g_ck)) || g_ck;
+
+      if (!userToken) {
+        throw new Error(
+          `[ServiceNow E2E] Missing valid X-UserToken for impersonating ${config.label} (${config.userName}).`,
+        );
+      }
 
       const impersonateRes = await personaContext.request.post(
         `${INSTANCE_URL}/api/now/ui/impersonate/${userSysId}`,
@@ -342,9 +358,10 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
         },
       );
 
-      if (!impersonateRes.ok()) {
-        console.warn(
-          `[ServiceNow E2E] Impersonation API returned ${impersonateRes.status()} for ${config.label}`,
+      if (impersonateRes.status() !== 200) {
+        const errText = await impersonateRes.text().catch(() => "");
+        throw new Error(
+          `[ServiceNow E2E] Impersonation failed for ${config.label} (${config.userName}): HTTP ${impersonateRes.status()} - ${errText}`,
         );
       }
 

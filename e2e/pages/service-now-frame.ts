@@ -2,27 +2,10 @@ import type { FrameLocator, Locator, Page } from "@playwright/test";
 
 import { ServiceNowNavigator } from "./navigator.ts";
 
-interface GFormApi {
-  getValue: (field: string) => string;
-  setValue?: (field: string, value: string) => void;
-  isReadOnly?: (field: string) => boolean;
-  isVisible?: (field: string) => boolean;
-  isElementVisible?: (field: string) => boolean;
-  getUniqueValue?: () => string;
-  save?: () => void;
-  submit?: (action?: string) => void;
-}
-
-declare global {
-  interface Window {
-    g_form?: GFormApi;
-  }
-}
-
 /**
  * Page Object Model encapsulating ServiceNow classic and Polaris UI frame interactions.
  * Strictly bans page.waitForLoadState("networkidle") due to ServiceNow AMB long-polling,
- * instead utilizing domcontentloaded, locator auto-waits, and window.g_form readiness polling.
+ * instead utilizing domcontentloaded, DOM locator auto-waits, and frame readiness polling.
  */
 export class ServiceNowFrame {
   readonly page: Page;
@@ -74,6 +57,29 @@ export class ServiceNowFrame {
   }
 
   /**
+   * Navigates directly to a table list view in #gsft_main.
+   */
+  async gotoList(table: string, query?: string): Promise<void> {
+    const queryPart = query ? `?sysparm_query=${encodeURIComponent(query)}` : "";
+    const targetUri = `${table}_list.do${queryPart}`;
+
+    await this.goto(`/nav_to.do?uri=${encodeURIComponent(targetUri)}`);
+  }
+
+  /**
+   * Verifies if a record is discoverable in the currently opened list view.
+   */
+  async isRecordInList(identifier: string): Promise<boolean> {
+    const rowLocator = this.frameLocator
+      .locator(
+        `table[id$="_table"] tr:has-text("${identifier}"), table.list_table tr:has-text("${identifier}"), a.linked:has-text("${identifier}"), a[href*="${identifier}"]`,
+      )
+      .first();
+
+    return rowLocator.isVisible({ timeout: 10000 }).catch(() => false);
+  }
+
+  /**
    * Waits for frame readiness without networkidle by checking DOM completeness
    * and polling for window.g_form readiness.
    */
@@ -89,7 +95,7 @@ export class ServiceNowFrame {
       await this.page
         .waitForFunction(
           () => {
-            // SAFETY: #gsft_main in ServiceNow forms is standard iframe element
+            // SAFETY: In ServiceNow forms, #gsft_main is the iframe element containing the form document.
             const iframeEl = document.querySelector("#gsft_main") as HTMLIFrameElement | null;
 
             if (!iframeEl) {
@@ -98,42 +104,16 @@ export class ServiceNowFrame {
 
             const frameDoc = iframeEl.contentDocument;
 
-            if (!frameDoc) {
-              return false;
-            }
-
-            const isDocComplete = frameDoc.readyState === "complete";
-            const frameWindow = iframeEl.contentWindow;
-
-            if (!frameWindow) {
-              return isDocComplete;
-            }
-
-            const gForm = frameWindow.g_form;
-
-            return isDocComplete && (!gForm || "getValue" in gForm);
+            return frameDoc ? frameDoc.readyState === "complete" : false;
           },
           undefined,
           { timeout },
         )
-        .catch(() => {
-          // Fallback to proceed once attached
-        });
+        .catch(() => {});
     } else {
       await this.page
-        .waitForFunction(
-          () => {
-            const isDocComplete = document.readyState === "complete";
-            const gForm = window.g_form;
-
-            return isDocComplete && (!gForm || "getValue" in gForm);
-          },
-          undefined,
-          { timeout },
-        )
-        .catch(() => {
-          // Fallback to proceed
-        });
+        .waitForFunction(() => document.readyState === "complete", undefined, { timeout })
+        .catch(() => {});
     }
   }
 
@@ -141,82 +121,74 @@ export class ServiceNowFrame {
    * Reads a field value from the form inside #gsft_main.
    */
   async getFieldValue(fieldName: string): Promise<string> {
-    // Try g_form first via frame evaluation
-    const gFormValue = await this.page
-      .evaluate((fName): string | null => {
-        // SAFETY: #gsft_main in ServiceNow is standard iframe
-        const iframe = document.querySelector("#gsft_main") as HTMLIFrameElement | null;
-        const targetWindow = iframe?.contentWindow || window;
-        const formApi = targetWindow.g_form;
-
-        if (formApi && "getValue" in formApi) {
-          const val = formApi.getValue(fName);
-
-          if (val) {
-            return val;
-          }
-        }
-      }, fieldName)
-      .catch(() => null);
-
-    if (gFormValue !== null && gFormValue !== undefined && gFormValue !== "") {
-      return gFormValue;
-    }
-
-    // Fallback: input or textarea element locator
-    const fieldLocator = this.frameLocator
+    // 1. Direct form controls (input, textarea, select)
+    const controlLocator = this.frameLocator
       .locator(
-        `input[name$="${fieldName}"], textarea[name$="${fieldName}"], select[name$="${fieldName}"]`,
+        `input[name$=".${fieldName}"], textarea[name$=".${fieldName}"], select[name$=".${fieldName}"], input#${fieldName}, textarea#${fieldName}, select#${fieldName}, input[name="${fieldName}"], textarea[name="${fieldName}"], select[name="${fieldName}"]`,
       )
       .first();
 
-    const inputVal = await fieldLocator.inputValue({ timeout: 2000 }).catch(() => "");
+    if (await controlLocator.isVisible({ timeout: 1500 }).catch(() => false)) {
+      const tagName = await controlLocator
+        .evaluate((el) => el.tagName.toLowerCase())
+        .catch(() => "");
 
-    if (inputVal) {
-      return inputVal;
+      if (tagName === "select") {
+        const selectVal = await controlLocator.inputValue().catch(() => "");
+
+        if (selectVal) {
+          return selectVal;
+        }
+
+        const selectedText = await controlLocator
+          .locator("option:checked")
+          .innerText()
+          .catch(() => "");
+
+        return selectedText.trim();
+      }
+
+      const inputVal = await controlLocator.inputValue().catch(() => "");
+
+      if (inputVal) {
+        return inputVal;
+      }
     }
 
-    // Fallback: check for read-only span or display element
+    // 2. Read-only or static display elements
     const displayLocator = this.frameLocator
       .locator(
         `[id*="sys_readonly"][id*="${fieldName}"], [id="element.${fieldName}"] .form-control-static, [id$=".${fieldName}"] .form-control-static, span#sys_display\\.${fieldName}, span#view\\.${fieldName}`,
       )
       .first();
 
-    const text = await displayLocator.innerText({ timeout: 2000 }).catch(() => "");
+    if (await displayLocator.isVisible({ timeout: 1500 }).catch(() => false)) {
+      const text = await displayLocator.innerText().catch(() => "");
 
-    return text.trim();
+      if (text.trim()) {
+        return text.trim();
+      }
+    }
+
+    // 3. Fallback: input value even if hidden/not strictly visible (e.g. state or sys_id fields)
+    const fallbackInputVal = await controlLocator.inputValue({ timeout: 1000 }).catch(() => "");
+
+    if (fallbackInputVal) {
+      return fallbackInputVal;
+    }
+
+    const fallbackText = await displayLocator.innerText({ timeout: 1000 }).catch(() => "");
+
+    return fallbackText.trim();
   }
 
   /**
    * Sets a field value on the form inside #gsft_main.
    */
   async setFieldValue(fieldName: string, value: string): Promise<void> {
-    const gFormSet = await this.page.evaluate(
-      ({ fName, val }): boolean => {
-        // SAFETY: #gsft_main in ServiceNow is standard iframe
-        const iframe = document.querySelector("#gsft_main") as HTMLIFrameElement | null;
-        const targetWindow = iframe?.contentWindow || window;
-        const formApi = targetWindow.g_form;
-
-        if (formApi && "setValue" in formApi && formApi.setValue) {
-          formApi.setValue(fName, val);
-
-          return true;
-        }
-
-        return false;
-      },
-      { fName: fieldName, val: value },
-    );
-
-    if (gFormSet) {
-      return;
-    }
-
     const fieldLocator = this.frameLocator
       .locator(
-        `input[name$="${fieldName}"], textarea[name$="${fieldName}"], select[name$="${fieldName}"], textarea[id*="${fieldName}"], input[id*="${fieldName}"]`,
+        `input[name$=".${fieldName}"], textarea[name$=".${fieldName}"], select[name$=".${fieldName}"], input#${fieldName}, textarea#${fieldName}, select#${fieldName}, input[name="${fieldName}"], textarea[name="${fieldName}"], select[name="${fieldName}"], textarea[id*="${fieldName}"], input[id*="${fieldName}"]`,
       )
       .first();
 
@@ -262,34 +234,23 @@ export class ServiceNowFrame {
    * Retrieves the sys_id of the currently opened record inside #gsft_main.
    */
   async getRecordSysId(): Promise<string> {
-    const gFormSysId = await this.page
-      .evaluate((): string | null => {
-        // SAFETY: #gsft_main in ServiceNow is standard iframe
-        const iframe = document.querySelector("#gsft_main") as HTMLIFrameElement | null;
-        const targetWindow = iframe?.contentWindow || window;
-        const formApi = targetWindow.g_form;
-
-        if (formApi && "getUniqueValue" in formApi && formApi.getUniqueValue) {
-          return formApi.getUniqueValue();
-        }
-
-        return null;
-      })
-      .catch(() => null);
-
-    if (gFormSysId) {
-      return gFormSysId;
-    }
-
     const sysIdInput = this.frameLocator
       .locator('input#sys_unique_value, input[name="sys_unique_value"]')
       .first();
 
-    return sysIdInput.inputValue({ timeout: 2000 }).catch(() => "");
+    const val = await sysIdInput.inputValue({ timeout: 2000 }).catch(() => "");
+
+    if (val) {
+      return val;
+    }
+
+    const url = this.page.url();
+    const match = url.match(/[?&]sys_id=([0-9a-fA-F]{32})/);
+
+    return match ? match[1] : "";
   }
 
   /**
-   * Clicks the Approve UI action button inside #gsft_main.
    */
   async clickApprove(): Promise<void> {
     const approveButton = this.frameLocator
@@ -352,26 +313,6 @@ export class ServiceNowFrame {
    * Verifies if a field is rendered read-only or disabled.
    */
   async isFieldReadOnly(fieldName: string): Promise<boolean> {
-    const isGFormReadOnly = await this.page
-      .evaluate((fName): boolean | null => {
-        // SAFETY: #gsft_main in ServiceNow is standard iframe
-        const iframe = document.querySelector("#gsft_main") as HTMLIFrameElement | null;
-        const targetWindow = iframe?.contentWindow || window;
-        const formApi = targetWindow.g_form;
-
-        if (formApi && formApi.isReadOnly && "isReadOnly" in formApi) {
-          return Boolean(formApi.isReadOnly(fName));
-        }
-
-        return null;
-      }, fieldName)
-      .catch(() => null);
-
-    if (isGFormReadOnly !== null && isGFormReadOnly !== undefined) {
-      return isGFormReadOnly;
-    }
-
-    // Check for ServiceNow sys_readonly span or form-control-static
     const readOnlyContainer = this.frameLocator
       .locator(
         `[id*="sys_readonly"][id*="${fieldName}"], [id="element.${fieldName}"] .form-control-static, [id$=".${fieldName}"] .form-control-static`,
@@ -388,60 +329,56 @@ export class ServiceNowFrame {
 
     const fieldLocator = this.frameLocator
       .locator(
-        `input[name$="${fieldName}"], textarea[name$="${fieldName}"], select[name$="${fieldName}"]`,
+        `input[name$=".${fieldName}"], textarea[name$=".${fieldName}"], select[name$=".${fieldName}"], input#${fieldName}, textarea#${fieldName}`,
       )
       .first();
 
-    const isDisabled = await fieldLocator.isDisabled({ timeout: 3000 }).catch(() => false);
+    const isDisabled = await fieldLocator.isDisabled({ timeout: 2000 }).catch(() => false);
 
     const isReadOnlyAttr = await fieldLocator
       .getAttribute("readonly")
       .then((val) => val !== null)
       .catch(() => false);
 
-    return isDisabled || isReadOnlyAttr;
+    const isAriaReadOnly = await fieldLocator
+      .getAttribute("aria-readonly")
+      .then((val) => val === "true")
+      .catch(() => false);
+
+    return isDisabled || isReadOnlyAttr || isAriaReadOnly;
   }
 
   /**
    * Checks whether a form field element is currently visible.
    */
   async isFieldVisible(fieldName: string): Promise<boolean> {
-    const isGFormVisible = await this.page.evaluate((fName): boolean | null => {
-      // SAFETY: #gsft_main in ServiceNow is standard iframe
-      const iframe = document.querySelector("#gsft_main") as HTMLIFrameElement | null;
-      const targetWindow = iframe?.contentWindow || window;
-      const formApi = targetWindow.g_form;
-
-      if (formApi && "isElementVisible" in formApi && formApi.isElementVisible) {
-        return Boolean(formApi.isElementVisible(fName));
-      }
-
-      if (formApi && "isVisible" in formApi && formApi.isVisible) {
-        return Boolean(formApi.isVisible(fName));
-      }
-
-      return null;
-    }, fieldName);
-
-    if (isGFormVisible !== null && isGFormVisible !== undefined) {
-      return isGFormVisible;
-    }
-
     const elementContainer = this.frameLocator
       .locator(
         `[id="element.x_711398_se_submission.${fieldName}"], [id="element.${fieldName}"], [id$=".${fieldName}"]`,
       )
       .first();
 
-    const containerCount = await elementContainer.count().catch(() => 0);
+    const isContainerVisible = await elementContainer
+      .isVisible({ timeout: 2000 })
+      .catch(() => false);
 
-    if (containerCount > 0) {
-      return elementContainer.isVisible({ timeout: 2000 }).catch(() => false);
+    if (isContainerVisible) {
+      const isHidden = await elementContainer
+        .evaluate((el) => {
+          const style = window.getComputedStyle(el);
+
+          return style.display === "none" || style.visibility === "hidden";
+        })
+        .catch(() => false);
+
+      if (!isHidden) {
+        return true;
+      }
     }
 
     const fieldLocator = this.frameLocator
       .locator(
-        `input[name$="${fieldName}"], textarea[name$="${fieldName}"], select[name$="${fieldName}"]`,
+        `input[name$=".${fieldName}"], textarea[name$=".${fieldName}"], select[name$=".${fieldName}"], input#${fieldName}, textarea#${fieldName}, select#${fieldName}`,
       )
       .first();
 

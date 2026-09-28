@@ -1,5 +1,3 @@
-import type { Page } from "@playwright/test";
-
 import { AUTH_FILES } from "../../playwright.config.ts";
 import { test, expect } from "../fixtures/cleanup.ts";
 import { ServiceNowNavigator } from "../pages/navigator.ts";
@@ -34,94 +32,6 @@ const REVIEWER_ADMIN_MODULES = [
 ];
 
 test.describe("05 - Navigator and Application Menu RBAC Acceptance E2E", () => {
-  // Helper to set up mock routes for navigator when running offline/static without instance credentials
-  async function setupOfflineNavigatorMocks(page: Page, role: "member" | "pm" | "coe") {
-    if (process.env.SN_ADMIN_PASSWORD) {
-      return;
-    }
-
-    const isMember = role === "member";
-
-    const visibleModules = isMember
-      ? [
-          { title: "New Evaluation", id: "mod_new", roles: "x_711398_se.se_user" },
-          { title: "My Skill Evaluations", id: "mod_my", roles: "x_711398_se.se_user" },
-        ]
-      : [
-          { title: "New Evaluation", id: "mod_new", roles: "x_711398_se.se_user" },
-          { title: "My Skill Evaluations", id: "mod_my", roles: "x_711398_se.se_user" },
-          { title: "All", id: "mod_all", roles: "x_711398_se.se_admin" },
-          { title: "Awaiting Approval", id: "mod_awaiting", roles: "x_711398_se.se_admin" },
-          { title: "Completed", id: "mod_completed", roles: "x_711398_se.se_admin" },
-          { title: "Product Lines", id: "mod_prod_lines", roles: "x_711398_se.se_admin" },
-          { title: "Skills", id: "mod_skills", roles: "x_711398_se.se_admin" },
-          { title: "Certificates", id: "mod_certs", roles: "x_711398_se.se_admin" },
-          { title: "Levels", id: "mod_levels", roles: "x_711398_se.se_admin" },
-        ];
-
-    await page.route("**/api/now/ui/navigator*", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          result: {
-            applications: [
-              {
-                id: "app_se",
-                title: "Skill Evaluation",
-                modules: visibleModules,
-              },
-            ],
-          },
-        }),
-      });
-    });
-
-    await page.route("**/api/now/table/sys_app_module*", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          result: visibleModules.map((m) => ({
-            title: m.title,
-            sys_id: m.id,
-            roles: m.roles,
-            "application.title": "Skill Evaluation",
-          })),
-        }),
-      });
-    });
-
-    await page.route("**/navpage.do*", async (route) => {
-      const renderedModulesHtml = visibleModules
-        .map(
-          (m) =>
-            `<li class="nav-item" data-id="module-${m.title}"><a class="sn-widget-list-item">${m.title}</a></li>`,
-        )
-        .join("\n");
-
-      await route.fulfill({
-        status: 200,
-        contentType: "text/html",
-        body: `<!DOCTYPE html>
-<html>
-<head><title>ServiceNow</title></head>
-<body>
-  <div class="nav-body">
-    <input id="filter" placeholder="Filter navigator" />
-    <div class="app-node" data-id="app-Skill Evaluation">
-      <span class="nav-app-title">Skill Evaluation</span>
-      <ul class="nav-modules">
-        ${renderedModulesHtml}
-      </ul>
-    </div>
-  </div>
-</body>
-</html>`,
-      });
-    });
-  }
-
   test.describe("Persona 1: Member (.auth/member.json)", () => {
     test.use({ storageState: AUTH_FILES.member });
 
@@ -129,8 +39,6 @@ test.describe("05 - Navigator and Application Menu RBAC Acceptance E2E", () => {
       page,
       cleanupTracker,
     }) => {
-      await setupOfflineNavigatorMocks(page, "member");
-
       const nav = new ServiceNowNavigator(page);
       await nav.goto();
       await nav.filterNavigator("Skill Evaluation");
@@ -171,8 +79,6 @@ test.describe("05 - Navigator and Application Menu RBAC Acceptance E2E", () => {
       page,
       cleanupTracker,
     }) => {
-      await setupOfflineNavigatorMocks(page, "pm");
-
       const nav = new ServiceNowNavigator(page);
       await nav.goto();
       await nav.filterNavigator("Skill Evaluation");
@@ -211,8 +117,6 @@ test.describe("05 - Navigator and Application Menu RBAC Acceptance E2E", () => {
       page,
       cleanupTracker,
     }) => {
-      await setupOfflineNavigatorMocks(page, "coe");
-
       const nav = new ServiceNowNavigator(page);
       await nav.goto();
       await nav.filterNavigator("Skill Evaluation");

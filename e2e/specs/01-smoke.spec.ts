@@ -9,17 +9,6 @@ test.describe("01 - Smoke: Member Session and Frame Harness", () => {
     page,
     cleanupTracker,
   }) => {
-    // In offline/static mode without credentials, mock nav_to.do frame container
-    if (!process.env.SN_ADMIN_PASSWORD) {
-      await page.route("**/nav_to.do*", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: '<!DOCTYPE html><html><body><iframe id="gsft_main" name="gsft_main" src="about:blank"></iframe></body></html>',
-        });
-      });
-    }
-
     const frame = new ServiceNowFrame(page);
 
     // Navigates directly to new Submission form in #gsft_main
