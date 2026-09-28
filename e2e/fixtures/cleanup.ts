@@ -10,13 +10,11 @@ export const TRACKED_TABLES = [
   "x_711398_se_skill_assessment",
   "x_711398_se_cert_acquisition",
   "sys_journal_field",
-  "sys_email",
 ] as const;
 
 export type TrackedTable = (typeof TRACKED_TABLES)[number];
 
 export const REVERSE_DELETE_ORDER: TrackedTable[] = [
-  "sys_email",
   "sys_journal_field",
   "x_711398_se_cert_acquisition",
   "x_711398_se_skill_assessment",
@@ -139,7 +137,6 @@ export class DataCleanupTracker {
       x_711398_se_skill_assessment: this.getRegistered("x_711398_se_skill_assessment"),
       x_711398_se_cert_acquisition: this.getRegistered("x_711398_se_cert_acquisition"),
       sys_journal_field: this.getRegistered("sys_journal_field"),
-      sys_email: this.getRegistered("sys_email"),
     };
 
     if (entry) {
@@ -168,7 +165,6 @@ export class DataCleanupTracker {
       x_711398_se_skill_assessment: 0,
       x_711398_se_cert_acquisition: 0,
       sys_journal_field: 0,
-      sys_email: 0,
     };
 
     if (!adminPassword) {
@@ -197,7 +193,6 @@ export class DataCleanupTracker {
       x_711398_se_skill_assessment: new Set(this.getRegistered("x_711398_se_skill_assessment")),
       x_711398_se_cert_acquisition: new Set(this.getRegistered("x_711398_se_cert_acquisition")),
       sys_journal_field: new Set(this.getRegistered("sys_journal_field")),
-      sys_email: new Set(this.getRegistered("sys_email")),
     };
 
     try {
@@ -275,23 +270,6 @@ export class DataCleanupTracker {
             }
           }
         }
-
-        // Discover emails
-        const emailRes = await fetch(
-          `${INSTANCE_URL}/api/now/table/sys_email?sysparm_query=instanceIN${subInList}^ORsubjectLIKE${encodeURIComponent(this.correlationToken)}&sysparm_fields=sys_id`,
-          { headers },
-        );
-
-        if (emailRes.ok) {
-          // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
-          const emailData = (await emailRes.json()) as TableApiResponse<SysIdItem[]>;
-
-          if (Array.isArray(emailData.result)) {
-            for (const item of emailData.result) {
-              discovered.sys_email.add(item.sys_id);
-            }
-          }
-        }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -354,7 +332,7 @@ export class DataCleanupTracker {
 
     const residuals: Array<{ table: TrackedTable; count: number; sysIds: string[] }> = [];
 
-    // Query each of the 5 tracked tables by correlation token and registered sys_ids
+    // Query each tracked table by correlation token and registered sys_ids
     for (const table of TRACKED_TABLES) {
       const regIds = this.getRegistered(table);
       const queryParts: string[] = [];
@@ -375,15 +353,6 @@ export class DataCleanupTracker {
 
         if (subIds.length > 0) {
           queryParts.push(`element_idIN${subIds.join(",")}`);
-        }
-      } else if (table === "sys_email") {
-        queryParts.push(
-          `subjectLIKE${encodeURIComponent(this.correlationToken)}^ORbodyLIKE${encodeURIComponent(this.correlationToken)}`,
-        );
-        const subIds = this.getRegistered("x_711398_se_submission");
-
-        if (subIds.length > 0) {
-          queryParts.push(`instanceIN${subIds.join(",")}`);
         }
       } else {
         // x_711398_se_skill_assessment and x_711398_se_cert_acquisition

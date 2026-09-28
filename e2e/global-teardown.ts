@@ -29,7 +29,6 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
     x_711398_se_skill_assessment: 0,
     x_711398_se_cert_acquisition: 0,
     sys_journal_field: 0,
-    sys_email: 0,
   };
 
   if (!adminPassword || manifest.runs.length === 0) {
@@ -63,7 +62,6 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
     x_711398_se_skill_assessment: new Set<string>(),
     x_711398_se_cert_acquisition: new Set<string>(),
     sys_journal_field: new Set<string>(),
-    sys_email: new Set<string>(),
   };
 
   for (const run of manifest.runs) {
@@ -158,30 +156,13 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
           }
         }
       }
-
-      // Discover emails
-      const emailRes = await fetch(
-        `${INSTANCE_URL}/api/now/table/sys_email?sysparm_query=instanceIN${subInList}&sysparm_fields=sys_id`,
-        { headers },
-      );
-
-      if (emailRes.ok) {
-        // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
-        const emailData = (await emailRes.json()) as TableApiResponse<SysIdItem[]>;
-
-        if (Array.isArray(emailData.result)) {
-          for (const item of emailData.result) {
-            discovered.sys_email.add(item.sys_id);
-          }
-        }
-      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.warn(`[Global Teardown] Query error during cascade discovery: ${message}`);
     }
   }
 
-  // Also discover emails and journals by correlation token
+  // Also discover journals by correlation token
   for (const token of allCorrelationTokens) {
     try {
       const jfRes = await fetch(
@@ -196,22 +177,6 @@ export default async function globalTeardown(_config: FullConfig): Promise<void>
         if (Array.isArray(jfData.result)) {
           for (const item of jfData.result) {
             discovered.sys_journal_field.add(item.sys_id);
-          }
-        }
-      }
-
-      const emailRes = await fetch(
-        `${INSTANCE_URL}/api/now/table/sys_email?sysparm_query=subjectLIKE${encodeURIComponent(token)}^ORbodyLIKE${encodeURIComponent(token)}&sysparm_fields=sys_id`,
-        { headers },
-      );
-
-      if (emailRes.ok) {
-        // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
-        const emailData = (await emailRes.json()) as TableApiResponse<SysIdItem[]>;
-
-        if (Array.isArray(emailData.result)) {
-          for (const item of emailData.result) {
-            discovered.sys_email.add(item.sys_id);
           }
         }
       }
