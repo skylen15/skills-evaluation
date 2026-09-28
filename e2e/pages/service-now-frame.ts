@@ -8,6 +8,7 @@ interface GFormApi {
   isReadOnly?: (field: string) => boolean;
   isVisible?: (field: string) => boolean;
   isElementVisible?: (field: string) => boolean;
+  getUniqueValue?: () => string;
   save?: () => void;
   submit?: (action?: string) => void;
 }
@@ -255,6 +256,81 @@ export class ServiceNowFrame {
       .first();
 
     return buttonLocator.isVisible({ timeout: 3000 }).catch(() => false);
+  }
+
+  /**
+   * Retrieves the sys_id of the currently opened record inside #gsft_main.
+   */
+  async getRecordSysId(): Promise<string> {
+    const gFormSysId = await this.page
+      .evaluate((): string | null => {
+        // SAFETY: #gsft_main in ServiceNow is standard iframe
+        const iframe = document.querySelector("#gsft_main") as HTMLIFrameElement | null;
+        const targetWindow = iframe?.contentWindow || window;
+        const formApi = targetWindow.g_form;
+
+        if (formApi && "getUniqueValue" in formApi && formApi.getUniqueValue) {
+          return formApi.getUniqueValue();
+        }
+
+        return null;
+      })
+      .catch(() => null);
+
+    if (gFormSysId) {
+      return gFormSysId;
+    }
+
+    const sysIdInput = this.frameLocator
+      .locator('input#sys_unique_value, input[name="sys_unique_value"]')
+      .first();
+
+    return sysIdInput.inputValue({ timeout: 2000 }).catch(() => "");
+  }
+
+  /**
+   * Clicks the Approve UI action button inside #gsft_main.
+   */
+  async clickApprove(): Promise<void> {
+    const approveButton = this.frameLocator
+      .locator(
+        'button#pm_approve_submission, button[value="pm_approve_submission"], button#coe_approve_submission, button[value="coe_approve_submission"], button:has-text("Approve")',
+      )
+      .first();
+
+    await approveButton.waitFor({ state: "visible", timeout: 10000 });
+    await approveButton.click();
+    await this.waitForFrameReady();
+  }
+
+  /**
+   * Clicks the Reject UI action button inside #gsft_main.
+   */
+  async clickReject(): Promise<void> {
+    const rejectButton = this.frameLocator
+      .locator(
+        'button#pm_reject_submission, button[value="pm_reject_submission"], button#coe_reject_submission, button[value="coe_reject_submission"], button:has-text("Reject")',
+      )
+      .first();
+
+    await rejectButton.waitFor({ state: "visible", timeout: 10000 });
+    await rejectButton.click();
+    await this.waitForFrameReady();
+  }
+
+  /**
+   * Clicks the Submit for Review UI action button inside #gsft_main.
+   */
+  async clickSubmitForReview(): Promise<void> {
+    const submitButton = this.frameLocator
+      .locator(
+        'button#submit_for_review, button[value="submit_for_review"], button:has-text("Submit for Review")',
+      )
+      .first();
+
+    await submitButton.waitFor({ state: "visible", timeout: 10000 });
+    await submitButton.click();
+    await this.waitForFrameReady();
   }
 
   /**
