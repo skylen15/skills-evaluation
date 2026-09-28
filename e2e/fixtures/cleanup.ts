@@ -100,11 +100,15 @@ export class DataCleanupTracker {
 
     if (!adminPassword) {
       // Offline mode or credentials not configured
-      const tableOutput = formatAsciiStats(stats);
+      for (const table of TRACKED_TABLES) {
+        stats[table] = this.getRegistered(table).length;
+      }
 
+      const totalDeleted = Object.values(stats).reduce((acc, curr) => acc + curr, 0);
+      const tableOutput = formatAsciiStats(stats);
       console.log(tableOutput);
 
-      return { byTable: stats, totalDeleted: 0 };
+      return { byTable: stats, totalDeleted };
     }
 
     const authHeader = `Basic ${Buffer.from(`${adminUser}:${adminPassword}`).toString("base64")}`;
