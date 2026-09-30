@@ -15,6 +15,7 @@
     ".windsurf/**",
     "@types/servicenow/**",
     "dist/**",
+    "e2e/**",
     "target/**",
     "tools/oxlint/anti-slop/**"
   ],
