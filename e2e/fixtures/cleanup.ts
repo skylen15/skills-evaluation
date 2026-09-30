@@ -4,6 +4,11 @@ import path from "node:path";
 import { test as base, expect } from "@playwright/test";
 
 import { AUTH_DIR, INSTANCE_URL } from "../../playwright.config.ts";
+import { normalizeInstanceUrl } from "../utils/url-helper.ts";
+
+export { normalizeInstanceUrl };
+
+export const API_BASE_URL = normalizeInstanceUrl(INSTANCE_URL);
 
 export const TRACKED_TABLES = [
   "x_711398_se_submission",
@@ -20,6 +25,43 @@ export const REVERSE_DELETE_ORDER: TrackedTable[] = [
   "x_711398_se_skill_assessment",
   "x_711398_se_submission",
 ];
+
+export function getAdminApiHeaders(customAuthHeader?: string): HeadersInit {
+  if (customAuthHeader) {
+    return {
+      Authorization: customAuthHeader,
+      Accept: "application/json",
+    };
+  }
+
+  const sessionFile = path.resolve(AUTH_DIR, "admin-session.json");
+  if (fs.existsSync(sessionFile)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(sessionFile, "utf-8")) as Record<string, string>;
+      if (data && typeof data === "object") {
+        return {
+          Accept: "application/json",
+          ...data,
+        };
+      }
+    } catch {
+      // Fall back to Basic Auth
+    }
+  }
+
+  const adminUser = process.env.SN_ADMIN_USER || "admin";
+  const adminPassword = process.env.SN_ADMIN_PASSWORD;
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  if (adminPassword) {
+    headers.Authorization = `Basic ${Buffer.from(`${adminUser}:${adminPassword}`).toString("base64")}`;
+  }
+
+  return headers;
+}
 
 interface SysIdItem {
   sys_id: string;
@@ -159,6 +201,7 @@ export class DataCleanupTracker {
   async rollback(): Promise<CleanupStats> {
     const adminUser = process.env.SN_ADMIN_USER || "admin";
     const adminPassword = process.env.SN_ADMIN_PASSWORD;
+    const sessionFile = path.resolve(AUTH_DIR, "admin-session.json");
 
     const stats: Record<TrackedTable, number> = {
       x_711398_se_submission: 0,
@@ -167,7 +210,7 @@ export class DataCleanupTracker {
       sys_journal_field: 0,
     };
 
-    if (!adminPassword) {
+    if (!adminPassword && !fs.existsSync(sessionFile)) {
       // Offline mode or credentials not configured
       for (const table of TRACKED_TABLES) {
         stats[table] = this.getRegistered(table).length;
@@ -180,12 +223,7 @@ export class DataCleanupTracker {
       return { byTable: stats, totalDeleted };
     }
 
-    const authHeader = `Basic ${Buffer.from(`${adminUser}:${adminPassword}`).toString("base64")}`;
-
-    const headers: HeadersInit = {
-      Authorization: authHeader,
-      Accept: "application/json",
-    };
+    const headers: HeadersInit = getAdminApiHeaders();
 
     // 1. Discover all records linked by correlation token or parent submission
     const discovered: Record<TrackedTable, Set<string>> = {
@@ -200,10 +238,9 @@ export class DataCleanupTracker {
       const subQuery = `descriptionLIKE${encodeURIComponent(this.correlationToken)}^ORwork_notesLIKE${encodeURIComponent(this.correlationToken)}`;
 
       const subRes = await fetch(
-        `${INSTANCE_URL}/api/now/table/x_711398_se_submission?sysparm_query=${subQuery}&sysparm_fields=sys_id`,
+        `${API_BASE_URL}/api/now/table/x_711398_se_submission?sysparm_query=${subQuery}&sysparm_fields=sys_id`,
         { headers },
       );
-
       if (subRes.ok) {
         // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
         const subData = (await subRes.json()) as TableApiResponse<SysIdItem[]>;
@@ -222,10 +259,9 @@ export class DataCleanupTracker {
 
         // Discover child skill assessments
         const saRes = await fetch(
-          `${INSTANCE_URL}/api/now/table/x_711398_se_skill_assessment?sysparm_query=submissionIN${subInList}&sysparm_fields=sys_id`,
+          `${API_BASE_URL}/api/now/table/x_711398_se_skill_assessment?sysparm_query=submissionIN${subInList}&sysparm_fields=sys_id`,
           { headers },
         );
-
         if (saRes.ok) {
           // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
           const saData = (await saRes.json()) as TableApiResponse<SysIdItem[]>;
@@ -239,10 +275,9 @@ export class DataCleanupTracker {
 
         // Discover child cert acquisitions
         const caRes = await fetch(
-          `${INSTANCE_URL}/api/now/table/x_711398_se_cert_acquisition?sysparm_query=submissionIN${subInList}&sysparm_fields=sys_id`,
+          `${API_BASE_URL}/api/now/table/x_711398_se_cert_acquisition?sysparm_query=submissionIN${subInList}&sysparm_fields=sys_id`,
           { headers },
         );
-
         if (caRes.ok) {
           // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
           const caData = (await caRes.json()) as TableApiResponse<SysIdItem[]>;
@@ -256,10 +291,9 @@ export class DataCleanupTracker {
 
         // Discover journal entries
         const jfRes = await fetch(
-          `${INSTANCE_URL}/api/now/table/sys_journal_field?sysparm_query=element_idIN${subInList}^ORvalueLIKE${encodeURIComponent(this.correlationToken)}&sysparm_fields=sys_id`,
+          `${API_BASE_URL}/api/now/table/sys_journal_field?sysparm_query=element_idIN${subInList}^ORvalueLIKE${encodeURIComponent(this.correlationToken)}&sysparm_fields=sys_id`,
           { headers },
         );
-
         if (jfRes.ok) {
           // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
           const jfData = (await jfRes.json()) as TableApiResponse<SysIdItem[]>;
@@ -282,7 +316,7 @@ export class DataCleanupTracker {
       const sysIds = Array.from(discovered[table]);
 
       for (const sysId of sysIds) {
-        const delRes = await fetch(`${INSTANCE_URL}/api/now/table/${table}/${sysId}`, {
+        const delRes = await fetch(`${API_BASE_URL}/api/now/table/${table}/${sysId}`, {
           method: "DELETE",
           headers,
         });
@@ -299,7 +333,7 @@ export class DataCleanupTracker {
     }
 
     // 3. Verify zero residual records remain on instance matching this run
-    await this.verifyZeroResidual(authHeader);
+    await this.verifyZeroResidual();
 
     const totalDeleted = Object.values(stats).reduce((acc, curr) => acc + curr, 0);
     const tableOutput = formatAsciiStats(stats);
@@ -314,22 +348,14 @@ export class DataCleanupTracker {
    * Throws an error if any records are found or if any verification query fails.
    */
   async verifyZeroResidual(customAuthHeader?: string): Promise<void> {
-    const adminUser = process.env.SN_ADMIN_USER || "admin";
     const adminPassword = process.env.SN_ADMIN_PASSWORD;
+    const sessionFile = path.resolve(AUTH_DIR, "admin-session.json");
 
-    if (!adminPassword) {
+    if (!adminPassword && !fs.existsSync(sessionFile)) {
       return;
     }
 
-    const authHeader =
-      customAuthHeader ||
-      `Basic ${Buffer.from(`${adminUser}:${adminPassword}`).toString("base64")}`;
-
-    const headers: HeadersInit = {
-      Authorization: authHeader,
-      Accept: "application/json",
-    };
-
+    const headers: HeadersInit = getAdminApiHeaders(customAuthHeader);
     const residuals: Array<{ table: TrackedTable; count: number; sysIds: string[] }> = [];
 
     // Query each tracked table by correlation token and registered sys_ids
@@ -368,8 +394,7 @@ export class DataCleanupTracker {
       }
 
       const queryString = queryParts.join("^OR");
-      const url = `${INSTANCE_URL}/api/now/table/${table}?sysparm_query=${queryString}&sysparm_fields=sys_id`;
-
+      const url = `${API_BASE_URL}/api/now/table/${table}?sysparm_query=${queryString}&sysparm_fields=sys_id`;
       const res = await fetch(url, { headers });
 
       if (!res.ok) {

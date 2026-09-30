@@ -28,24 +28,45 @@ export class ServiceNowNavigator {
    * Navigates to the base portal / standard navigation page.
    */
   async goto(): Promise<void> {
-    await this.page.goto("/navpage.do", { waitUntil: "domcontentloaded" });
+    try {
+      await this.page.goto("/now/nav/ui/classic/params/target/ui_page.do", {
+        waitUntil: "domcontentloaded",
+        timeout: 45000,
+      });
+    } catch {
+      await this.page.goto("/navpage.do", {
+        waitUntil: "domcontentloaded",
+        timeout: 45000,
+      });
+    }
+    await this.page.waitForTimeout(1000);
   }
 
   /**
    * Filters the navigator via the search/filter input in Classic UI or Polaris UI.
    */
   async filterNavigator(term: string): Promise<void> {
-    // Classic filter input: #filter; Polaris filter input: input#filter or [placeholder*='Filter']
+    const allMenuButton = this.page
+      .getByRole("menuitem", { name: "All" })
+      .or(this.page.locator('button[aria-label="All"], [data-testid="all-menu"], #all-menu'))
+      .first();
+
     const filterInput = this.page
       .locator(
         "#filter, input#filter, input[placeholder*='Filter' i], input[aria-label*='Filter' i]",
       )
       .first();
 
-    const isVisible = await filterInput.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!(await filterInput.isVisible({ timeout: 2000 }).catch(() => false))) {
+      if (await allMenuButton.isVisible({ timeout: 4000 }).catch(() => false)) {
+        await allMenuButton.click({ timeout: 4000 }).catch(() => {});
+        await filterInput.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+      }
+    }
 
-    if (isVisible) {
+    if (await filterInput.isVisible({ timeout: 5000 }).catch(() => false)) {
       await filterInput.fill(term);
+      await this.page.waitForTimeout(1500);
     }
   }
 
@@ -63,7 +84,7 @@ export class ServiceNowNavigator {
    */
   getModuleLocator(title: string): Locator {
     return this.page.locator(
-      `[data-id="module-${title}"], a.nav-item:has-text("${title}"), .sn-widget-list-item:has-text("${title}"), .module-node:has-text("${title}"), a:has-text("${title}")`,
+      `[data-id="module-${title}"], a.nav-item:has-text("${title}"), .sn-widget-list-item:has-text("${title}"), .module-node:has-text("${title}"), [role="treeitem"]:has-text("${title}"), a:has-text("${title}"), span.label:has-text("${title}"), span:has-text("${title}")`,
     );
   }
 
@@ -88,23 +109,52 @@ export class ServiceNowNavigator {
           const json = await navRes.json();
           const items: NavigatorModuleResult[] = [];
 
-          if (json?.result?.applications) {
-            for (const app of json.result.applications) {
-              if (
-                app.title?.toLowerCase().includes(term.toLowerCase()) &&
-                Array.isArray(app.modules)
-              ) {
-                for (const mod of app.modules) {
-                  items.push({
-                    title: mod.title,
-                    id: mod.id,
-                    roles: Array.isArray(mod.roles) ? mod.roles.join(",") : mod.roles,
-                    applicationTitle: app.title,
-                  });
-                }
-              }
-            }
+          const appList = Array.isArray(json?.result)
+            ? json.result
+            : Array.isArray(json?.result?.applications)
+              ? json.result.applications
+              : [];
 
+          for (const app of appList) {
+            if (
+              app.title?.toLowerCase().includes(term.toLowerCase()) &&
+              Array.isArray(app.modules)
+            ) {
+              const collectModules = (
+                mods: Array<{
+                  title?: string;
+                  id?: string;
+                  roles?: string | string[];
+                  modules?: unknown[];
+                }>,
+              ) => {
+                for (const mod of mods) {
+                  if (typeof mod.title === "string") {
+                    items.push({
+                      title: mod.title,
+                      id: mod.id,
+                      roles: Array.isArray(mod.roles) ? mod.roles.join(",") : mod.roles,
+                      applicationTitle: app.title,
+                    });
+                  }
+                  if (Array.isArray(mod.modules)) {
+                    // SAFETY: Nested separator modules follow the same recursive application structure.
+                    collectModules(
+                      mod.modules as Array<{
+                        title?: string;
+                        id?: string;
+                        roles?: string | string[];
+                        modules?: unknown[];
+                      }>,
+                    );
+                  }
+                }
+              };
+              collectModules(app.modules);
+            }
+          }
+
+          if (items.length > 0) {
             return items;
           }
         }

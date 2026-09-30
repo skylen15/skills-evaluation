@@ -24,13 +24,29 @@ async function createMemberSubmittedSubmission(
 
     await memberFrame.setFieldValue("description", desc);
     await memberFrame.saveRecord();
-    const realSysId = await memberFrame.getRecordSysId();
+
+    // Ensure we open the newly created record form before clicking Submit for Review
+    let realSysId = (await memberFrame.getRecordSysId()) || memberFrame.currentRecordSysId;
+    if (!realSysId) {
+      await memberFrame.gotoList("x_711398_se_submission", `description=${desc}`);
+      const link = memberFrame.frameLocator
+        .locator(
+          `a.linked:has-text("${desc}"), a:has-text("${desc}"), table[id$="_table"] a[href*="sys_id="]`,
+        )
+        .first();
+      const href = await link.getAttribute("href", { timeout: 15000 }).catch(() => "");
+      const match = href.match(/[?&]sys_id=([0-9a-fA-F]{32})/);
+      if (match) {
+        realSysId = match[1];
+      }
+    }
 
     if (realSysId) {
       cleanupTracker.register("x_711398_se_submission", realSysId);
+      await memberFrame.gotoRecord("x_711398_se_submission", realSysId);
     }
 
-    await memberFrame.clickSubmitForReview();
+    await memberFrame.clickSubmitForReview(realSysId);
 
     return realSysId;
   } finally {
@@ -81,7 +97,7 @@ test.describe("03 - PM Gate 1 Review, Approval & Rejection Acceptance E2E", () =
     expect(stateAfterNote.toLowerCase()).toBe("submitted");
 
     // 4. PM clicks "Approve" UI action
-    await frame.clickApprove();
+    await frame.clickApprove(subId);
 
     // 5. Verifies Submission advances to Reviewed state
     const stateAfterApproval = await frame.getFieldValue("state");
@@ -125,7 +141,7 @@ test.describe("03 - PM Gate 1 Review, Approval & Rejection Acceptance E2E", () =
     expect(await frame.isButtonVisible("pm_reject_submission")).toBe(true);
 
     // 3. PM clicks "Reject" UI action
-    await frame.clickReject();
+    await frame.clickReject(subId);
 
     // 4. Verifies Submission transitions back to Draft state for Member revision
     const stateAfterRejection = await frame.getFieldValue("state");
@@ -155,14 +171,29 @@ test.describe("03 - PM Gate 1 Review, Approval & Rejection Acceptance E2E", () =
     await frame.setFieldValue("description", descriptionText);
     await frame.saveRecord();
 
-    const realSysId = await frame.getRecordSysId();
+    let realSysId = (await frame.getRecordSysId()) || frame.currentRecordSysId;
+    if (!realSysId) {
+      await frame.gotoList("x_711398_se_submission", `description=${descriptionText}`);
+      const link = frame.frameLocator
+        .locator(
+          `a.linked:has-text("${descriptionText}"), a:has-text("${descriptionText}"), table[id$="_table"] a[href*="sys_id="]`,
+        )
+        .first();
+      const href = await link.getAttribute("href", { timeout: 15000 }).catch(() => "");
+      const match = href.match(/[?&]sys_id=([0-9a-fA-F]{32})/);
+      if (match) {
+        realSysId = match[1];
+      }
+    }
 
     if (realSysId) {
       cleanupTracker.register("x_711398_se_submission", realSysId);
+      await frame.gotoRecord("x_711398_se_submission", realSysId);
     }
 
     // 2. PM clicks "Submit for Review"
-    await frame.clickSubmitForReview();
+    await frame.clickSubmitForReview(realSysId);
+    await frame.gotoRecord("x_711398_se_submission", realSysId);
 
     // 3. Verifies state transitions to Submitted
     const submittedState = await frame.getFieldValue("state");
