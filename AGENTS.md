@@ -19,3 +19,4 @@ Verify before calling work done: format, then lint, then typecheck, then test, t
 ### Testing & Debugging
 
 For test execution strategy (unit test vs instance ATF), CLI log inspection, and the local fast feedback loop, see `docs/testing-and-debugging.md`. When implementing ATF tests, follow `atf-guide` via Now SDK (`npx @servicenow/sdk explain atf-guide --format=raw`).
+When implementing or troubleshooting ServiceNow browser E2E tests, read `docs/agents/servicenow-e2e-playbook.md` for the required authentication, preflight, persona-session, UI-adapter, cleanup, and verification contracts.
