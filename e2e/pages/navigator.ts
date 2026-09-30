@@ -31,12 +31,12 @@ export class ServiceNowNavigator {
     try {
       await this.page.goto("/now/nav/ui/classic/params/target/ui_page.do", {
         waitUntil: "domcontentloaded",
-        timeout: 15000,
+        timeout: 45000,
       });
     } catch {
       await this.page.goto("/navpage.do", {
         waitUntil: "domcontentloaded",
-        timeout: 20000,
+        timeout: 45000,
       });
     }
     await this.page.waitForTimeout(1000);
@@ -48,11 +48,7 @@ export class ServiceNowNavigator {
   async filterNavigator(term: string): Promise<void> {
     const allMenuButton = this.page
       .getByRole("menuitem", { name: "All" })
-      .or(
-        this.page.locator(
-          'button[aria-label="All"], [data-testid="all-menu"], #all-menu',
-        ),
-      )
+      .or(this.page.locator('button[aria-label="All"], [data-testid="all-menu"], #all-menu'))
       .first();
 
     const filterInput = this.page

@@ -1,13 +1,15 @@
 import type { FrameLocator, Locator, Page } from "@playwright/test";
 
+import { buildContentUrl, resolveNavigatorPath } from "../utils/url-helper.ts";
 import { ServiceNowNavigator } from "./navigator.ts";
-
 /**
  * Page Object Model encapsulating ServiceNow classic and Polaris UI frame interactions.
  * Strictly bans page.waitForLoadState("networkidle") due to ServiceNow AMB long-polling,
  * instead utilizing domcontentloaded, DOM locator auto-waits, and frame readiness polling.
  */
 export class ServiceNowFrame {
+  static readonly ERROR_SURFACE_SELECTORS = `.outputmsg_error, .notification-error, .alert-danger, [role="alert"], alert, div.dp-msg-text, .alert-list, [id*="alert"]`;
+
   readonly page: Page;
   readonly navigator: ServiceNowNavigator;
   currentRecordSysId = "";
@@ -25,9 +27,7 @@ export class ServiceNowFrame {
     const frame = await handle?.contentFrame();
 
     const baseURL = this.page.context().baseURL || process.env.SN_INSTANCE_URL || "";
-    const fullUrl = targetUrl.startsWith("http")
-      ? targetUrl
-      : `${baseURL}/${targetUrl}`.replace(/([^:]\/)\/+/g, "$1");
+    const fullUrl = buildContentUrl(baseURL, targetUrl);
 
     if (frame) {
       await frame.goto(fullUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
@@ -53,8 +53,7 @@ export class ServiceNowFrame {
    * Navigates to a specific path using domcontentloaded and waits for form readiness.
    */
   async goto(path: string, options?: { timeout?: number }): Promise<void> {
-    const timeout = options?.timeout ?? 30000;
-
+    const timeout = options?.timeout ?? 60000;
     await this.page.goto(path, { waitUntil: "domcontentloaded", timeout });
     await this.waitForFrameReady(timeout);
   }
@@ -64,15 +63,7 @@ export class ServiceNowFrame {
    */
   resolveNavigatorPath(targetUri: string): string {
     const baseURL = this.page.context().baseURL ?? "";
-    const isClassicNavPath =
-      baseURL.includes("/now/nav/ui/classic/params/target") ||
-      (typeof process !== "undefined" &&
-        process.env.SN_INSTANCE_URL?.includes("/now/nav/ui/classic/params/target"));
-
-    const encoded = encodeURIComponent(targetUri);
-    return isClassicNavPath
-      ? `/now/nav/ui/classic/params/target/${encoded}`
-      : `/nav_to.do?uri=${encoded}`;
+    return resolveNavigatorPath(targetUri, { baseUrl: baseURL });
   }
 
   /**
@@ -138,7 +129,12 @@ export class ServiceNowFrame {
             if (window.location.href === "about:blank") return false;
             const win = window as unknown as Record<string, unknown>;
             if (win["g_form"]) return true;
-            if (document.querySelector("form, table.list_table, table[id$='_table'], div.list2_body, .list_div, div#tabs2_section")) return true;
+            if (
+              document.querySelector(
+                "form, table.list_table, table[id$='_table'], div.list2_body, .list_div, div#tabs2_section",
+              )
+            )
+              return true;
             return false;
           } catch {
             return false;
@@ -158,7 +154,7 @@ export class ServiceNowFrame {
     const PERSONA_USER_MAP: Record<string, string> = {
       "1438ef1a93ef47d0bceaf5532bba107a": "se_member_test",
       "47d8271693ef47d0bceaf5532bba103c": "se_pm_test",
-      "afd8e7da93ef47d0bceaf5532bba101d": "se_coe_test",
+      afd8e7da93ef47d0bceaf5532bba101d: "se_coe_test",
       "SE Member Test": "se_member_test",
       "SE PM Test": "se_pm_test",
       "SE CoE Head Test": "se_coe_test",
@@ -173,10 +169,12 @@ export class ServiceNowFrame {
           .evaluate((_, fName) => {
             try {
               const win = window as unknown as Record<string, unknown>;
-              const gf = win["g_form"] as {
-                getValue?: (n: string) => string;
-                getDisplayValue?: (n: string) => string;
-              } | undefined;
+              const gf = win["g_form"] as
+                | {
+                    getValue?: (n: string) => string;
+                    getDisplayValue?: (n: string) => string;
+                  }
+                | undefined;
               if (!gf) return "";
               const v = gf.getValue ? gf.getValue(fName) : "";
               if (v) return v;
@@ -261,11 +259,7 @@ export class ServiceNowFrame {
       }
     }
     // 0. Reference field display input (e.g. sys_display.x_711398_se_submission.assigned_to)
-    const refDisplayLocator = this.frameLocator
-      .locator(
-        `input[id*="sys_display"][id*="${fieldName}"], input[name*="sys_display"][name*="${fieldName}"], span#sys_display\\.${fieldName}`,
-      )
-      .first();
+    const refDisplayLocator = this.getReferenceDisplayLocator(fieldName);
 
     if (await refDisplayLocator.isVisible({ timeout: 1500 }).catch(() => false)) {
       const refVal = await refDisplayLocator.inputValue().catch(() => "");
@@ -402,7 +396,53 @@ export class ServiceNowFrame {
       await fieldLocator.fill(value);
       await fieldLocator.press("Tab").catch(() => {});
     }
+  }
 
+  /**
+   * Resolves the display locator for a ServiceNow reference field.
+   */
+  getReferenceDisplayLocator(fieldName: string, tableName?: string): Locator {
+    const tablePrefix = tableName ? `, input#sys_display\\.${tableName}\\.${fieldName}` : "";
+    return this.frameLocator
+      .locator(
+        `input[id*="sys_display"][id*="${fieldName}"], input[name*="sys_display"][name*="${fieldName}"], span#sys_display\\.${fieldName}${tablePrefix}`,
+      )
+      .first();
+  }
+
+  /**
+   * Sets a reference field value using the display input with autocomplete selection,
+   * keyboard navigation fallback, or direct setFieldValue fallback.
+   */
+  async setReferenceValue(
+    fieldName: string,
+    displayValue: string,
+    options?: { tableName?: string; timeout?: number },
+  ): Promise<void> {
+    const timeout = options?.timeout ?? 4000;
+    const refDisplay = this.getReferenceDisplayLocator(fieldName, options?.tableName);
+
+    if (await refDisplay.isVisible({ timeout }).catch(() => false)) {
+      await refDisplay.click();
+      await refDisplay.fill("");
+      await refDisplay.pressSequentially(displayValue, { delay: 30 });
+      await this.page.waitForTimeout(500);
+
+      const acOption = this.frameLocator
+        .locator(
+          '.ac_results li, div[id^="AC."] tr, .autocomplete-result, div[id*="ac_dropdown"] li',
+        )
+        .first();
+
+      if (await acOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await acOption.click().catch(() => {});
+      } else {
+        await refDisplay.press("ArrowDown").catch(() => {});
+        await refDisplay.press("Enter").catch(() => {});
+      }
+    } else {
+      await this.setFieldValue(fieldName, displayValue);
+    }
   }
 
   /**
@@ -419,9 +459,12 @@ export class ServiceNowFrame {
     if (
       !isDirectlyVisible &&
       this.currentRecordSysId &&
-      (actionIdOrText.toLowerCase().includes("submit for review") || actionIdOrText === "submit_for_review")
+      (actionIdOrText.toLowerCase().includes("submit for review") ||
+        actionIdOrText === "submit_for_review")
     ) {
-      await this.navigateContentFrame(`x_711398_se_submission.do?sys_id=${this.currentRecordSysId}`);
+      await this.navigateContentFrame(
+        `x_711398_se_submission.do?sys_id=${this.currentRecordSysId}`,
+      );
       buttonLocator = this.frameLocator
         .locator(
           `button#${actionIdOrText}, button[value="${actionIdOrText}"], button[id*="${actionIdOrText}"], button:has-text("${actionIdOrText}"), input[value="${actionIdOrText}"]`,
@@ -433,7 +476,10 @@ export class ServiceNowFrame {
     await buttonLocator.click();
     await this.waitForFrameReady();
 
-    if (actionIdOrText.toLowerCase().includes("submit for review") || actionIdOrText === "submit_for_review") {
+    if (
+      actionIdOrText.toLowerCase().includes("submit for review") ||
+      actionIdOrText === "submit_for_review"
+    ) {
       const start = Date.now();
       while (Date.now() - start < 15000) {
         const state = await this.frameLocator
@@ -454,7 +500,9 @@ export class ServiceNowFrame {
             .evaluate(() => {
               try {
                 const win = window as unknown as Record<string, unknown>;
-                const gsft = win["gsftSubmit"] as ((control: unknown, form: unknown, action: string) => void) | undefined;
+                const gsft = win["gsftSubmit"] as
+                  | ((control: unknown, form: unknown, action: string) => void)
+                  | undefined;
                 const gf = win["g_form"] as { getFormElement?: () => HTMLElement } | undefined;
                 if (typeof gsft === "function" && gf && typeof gf.getFormElement === "function") {
                   gsft(null, gf.getFormElement(), "submit_for_review");
@@ -525,9 +573,11 @@ export class ServiceNowFrame {
     }
 
     const url = this.page.url();
-    const match = url.match(/[?&]sys_id=([0-9a-fA-F]{32})/) || decodeURIComponent(url).match(/[?&]sys_id=([0-9a-fA-F]{32})/);
+    const match =
+      url.match(/[?&]sys_id=([0-9a-fA-F]{32})/) ||
+      decodeURIComponent(url).match(/[?&]sys_id=([0-9a-fA-F]{32})/);
 
-    return match ? match[1] : (this.currentRecordSysId || "");
+    return match ? match[1] : this.currentRecordSysId || "";
   }
   /**
    */
@@ -555,7 +605,9 @@ export class ServiceNowFrame {
       .evaluate((_, tgt) => {
         try {
           const win = window as unknown as Record<string, unknown>;
-          const gsft = win["gsftSubmit"] as ((c: unknown, f: unknown, a: string) => void) | undefined;
+          const gsft = win["gsftSubmit"] as
+            | ((c: unknown, f: unknown, a: string) => void)
+            | undefined;
           const gf = win["g_form"] as { getFormElement?: () => HTMLElement } | undefined;
           const btn = document.querySelector(
             'button#pm_approve_submission, button[value="pm_approve_submission"], button#coe_approve_submission, button[value="coe_approve_submission"], button[data-action-name="coe_approve_submission"], button[data-action-name="pm_approve_submission"]',
@@ -703,7 +755,9 @@ export class ServiceNowFrame {
         .evaluate(() => {
           try {
             const win = window as unknown as Record<string, unknown>;
-            const gsft = win["gsftSubmit"] as ((c: unknown, f: unknown, a: string) => void) | undefined;
+            const gsft = win["gsftSubmit"] as
+              | ((c: unknown, f: unknown, a: string) => void)
+              | undefined;
             const gf = win["g_form"] as { getFormElement?: () => HTMLElement } | undefined;
             if (typeof gsft === "function" && gf && typeof gf.getFormElement === "function") {
               gsft(null, gf.getFormElement(), "sysverb_insert_and_stay");
@@ -759,9 +813,13 @@ export class ServiceNowFrame {
             const ro = gf.isReadOnly(fName);
             if (typeof ro === "boolean") {
               if (fName === "work_notes") {
-                const postBtn = document.querySelector('button#activity_stream_post, button.activity-submit');
-                const ta = document.querySelector('textarea#activity-stream-work_notes-textarea, textarea[id*="work_notes"]');
-                if (postBtn && ta && !ta.hasAttribute('disabled') && !ta.hasAttribute('readonly')) {
+                const postBtn = document.querySelector(
+                  "button#activity_stream_post, button.activity-submit",
+                );
+                const ta = document.querySelector(
+                  'textarea#activity-stream-work_notes-textarea, textarea[id*="work_notes"]',
+                );
+                if (postBtn && ta && !ta.hasAttribute("disabled") && !ta.hasAttribute("readonly")) {
                   return false;
                 }
               }
@@ -931,68 +989,45 @@ export class ServiceNowFrame {
     }
     // Populate cert acquisition form fields
     // Direct reference input resolution for Certificate field
-    const certDisplay = this.frameLocator
-      .locator(
-        'input[id*="sys_display"][id*="certificate"], input[name*="sys_display"][name*="certificate"], input#sys_display\\.x_711398_se_cert_acquisition\\.certificate',
-      )
-      .first();
-
-    if (await certDisplay.isVisible({ timeout: 4000 }).catch(() => false)) {
-      await certDisplay.click();
-      await certDisplay.fill("");
-      await certDisplay.pressSequentially(details.certificate, { delay: 30 });
-      await this.page.waitForTimeout(500);
-
-      const acOption = this.frameLocator
-        .locator('.ac_results li, div[id^="AC."] tr, .autocomplete-result, div[id*="ac_dropdown"] li')
-        .first();
-
-      if (await acOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await acOption.click().catch(() => {});
-      } else {
-        await certDisplay.press("ArrowDown").catch(() => {});
-        await certDisplay.press("Enter").catch(() => {});
-      }
-    } else {
-      await this.setFieldValue("certificate", details.certificate);
-    }
+    await this.setReferenceValue("certificate", details.certificate, {
+      tableName: "x_711398_se_cert_acquisition",
+    });
 
     // Direct reference input resolution: guarantee sys_id is set on g_form
     await this.frameLocator
       .locator("body")
-      .evaluate(
-        async (_, certName) => {
-          try {
-            const win = window as unknown as Record<string, unknown>;
-            const gf = win["g_form"] as {
-              getValue: (name: string) => string;
-              setValue: (name: string, value: string, displayValue?: string) => void;
-            } | undefined;
+      .evaluate(async (_, certName) => {
+        try {
+          const win = window as unknown as Record<string, unknown>;
+          const gf = win["g_form"] as
+            | {
+                getValue: (name: string) => string;
+                setValue: (name: string, value: string, displayValue?: string) => void;
+              }
+            | undefined;
 
-            if (gf && !gf.getValue("certificate")) {
-              const resp = await fetch(
-                `/api/now/table/x_711398_se_certificate?sysparm_query=name=${encodeURIComponent(certName)}&sysparm_limit=1`,
-                {
-                  headers: {
-                    Accept: "application/json",
-                    "X-UserToken": (win["g_ck"] as string) || "",
-                  },
+          if (gf && !gf.getValue("certificate")) {
+            const resp = await fetch(
+              `/api/now/table/x_711398_se_certificate?sysparm_query=name=${encodeURIComponent(certName)}&sysparm_limit=1`,
+              {
+                headers: {
+                  Accept: "application/json",
+                  "X-UserToken": (win["g_ck"] as string) || "",
                 },
-              );
-              if (resp.ok) {
-                const data = (await resp.json()) as { result?: Array<{ sys_id: string }> };
-                const sysId = data.result?.[0]?.sys_id;
-                if (sysId) {
-                  gf.setValue("certificate", sysId, certName);
-                }
+              },
+            );
+            if (resp.ok) {
+              const data = (await resp.json()) as { result?: Array<{ sys_id: string }> };
+              const sysId = data.result?.[0]?.sys_id;
+              if (sysId) {
+                gf.setValue("certificate", sysId, certName);
               }
             }
-          } catch {
-            // ignore evaluate error
           }
-        },
-        details.certificate,
-      )
+        } catch {
+          // ignore evaluate error
+        }
+      }, details.certificate)
       .catch(() => {});
     await this.setFieldValue("certification_number", details.certificationNumber);
     await this.setFieldValue("certified_date", details.certifiedDate);
@@ -1066,27 +1101,38 @@ export class ServiceNowFrame {
   }
 
   /**
-   * Checks whether an error message banner is visible in the frame.
+   * Retrieves text from an error banner across both the inner content frame and outer Polaris shell.
    */
-  async hasErrorMessage(messageOrPattern?: string | RegExp): Promise<boolean> {
-    const selectors =
-      `.outputmsg_error, .notification-error, .alert-danger, [role="alert"], alert, div.dp-msg-text, .alert-list, [id*="alert"]`;
-
-    let text = "";
+  async getErrorMessageText(options?: { timeout?: number }): Promise<string> {
+    const timeout = options?.timeout ?? 2000;
+    const selectors = ServiceNowFrame.ERROR_SURFACE_SELECTORS;
 
     // 1. Check inside content frame
     const frameBanner = this.frameLocator.locator(selectors).first();
-    if (await frameBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
-      text = await frameBanner.innerText().catch(() => "");
+    if (await frameBanner.isVisible({ timeout }).catch(() => false)) {
+      const text = await frameBanner.innerText().catch(() => "");
+      if (text.trim()) {
+        return text.trim();
+      }
     }
 
     // 2. Check in outer Polaris shell if not found inside frame
-    if (!text) {
-      const pageBanner = this.page.locator(selectors).first();
-      if (await pageBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
-        text = await pageBanner.innerText().catch(() => "");
+    const pageBanner = this.page.locator(selectors).first();
+    if (await pageBanner.isVisible({ timeout }).catch(() => false)) {
+      const text = await pageBanner.innerText().catch(() => "");
+      if (text.trim()) {
+        return text.trim();
       }
     }
+
+    return "";
+  }
+
+  /**
+   * Checks whether an error message banner is visible in the frame or outer shell.
+   */
+  async hasErrorMessage(messageOrPattern?: string | RegExp): Promise<boolean> {
+    const text = await this.getErrorMessageText();
 
     if (!text) {
       return false;

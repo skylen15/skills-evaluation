@@ -30,7 +30,9 @@ async function createMemberSubmittedSubmission(
     if (!realSysId) {
       await memberFrame.gotoList("x_711398_se_submission", `description=${desc}`);
       const link = memberFrame.frameLocator
-        .locator(`a.linked:has-text("${desc}"), a:has-text("${desc}"), table[id$="_table"] a[href*="sys_id="]`)
+        .locator(
+          `a.linked:has-text("${desc}"), a:has-text("${desc}"), table[id$="_table"] a[href*="sys_id="]`,
+        )
         .first();
       const href = await link.getAttribute("href", { timeout: 15000 }).catch(() => "");
       const match = href.match(/[?&]sys_id=([0-9a-fA-F]{32})/);
@@ -314,7 +316,9 @@ test.describe("04 - CoE Head Gate 2 Review, Completion & Immutability Acceptance
     if (!realSysId) {
       await frame.gotoList("x_711398_se_submission", `description=${descriptionText}`);
       const link = frame.frameLocator
-        .locator(`a.linked:has-text("${descriptionText}"), a:has-text("${descriptionText}"), table[id$="_table"] a[href*="sys_id="]`)
+        .locator(
+          `a.linked:has-text("${descriptionText}"), a:has-text("${descriptionText}"), table[id$="_table"] a[href*="sys_id="]`,
+        )
         .first();
       const href = await link.getAttribute("href", { timeout: 15000 }).catch(() => "");
       const match = href.match(/[?&]sys_id=([0-9a-fA-F]{32})/);

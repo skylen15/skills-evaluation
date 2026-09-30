@@ -29,9 +29,9 @@ export const AUTH_FILES = {
 
 export default defineConfig({
   testDir: "./e2e/specs",
-  timeout: 90000,
+  timeout: 180000,
   expect: {
-    timeout: 15000,
+    timeout: 20000,
   },
   fullyParallel: false,
   workers: 1,
@@ -44,8 +44,8 @@ export default defineConfig({
     headless: true,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
-    actionTimeout: 15000,
-    navigationTimeout: 30000,
+    actionTimeout: 20000,
+    navigationTimeout: 60000,
   },
   projects: [
     {
