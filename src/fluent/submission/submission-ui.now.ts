@@ -111,7 +111,7 @@ UiPolicy({
   actions: [{ field: "work_notes", readOnly: true }],
 });
 
-UiAction({
+export const submitForReviewUiAction = UiAction({
   $id: Now.ID["submit-for-review"],
   table: "x_711398_se_submission",
   name: "Submit for Review",
@@ -134,7 +134,7 @@ const PM_GATE_CONDITION = `current.getValue('state') == 'submitted' &&
 current.getValue('assigned_to') != gs.getUserID() &&
 gs.getUser().isMemberOf('${SKILL_EVALUATION_PM_GROUP_NAME}')`;
 
-UiAction({
+export const pmApproveUiAction = UiAction({
   $id: Now.ID["pm-approve-submission"],
   table: "x_711398_se_submission",
   name: "Approve",
@@ -152,7 +152,7 @@ UiAction({
   script: approveAtPmGate,
 });
 
-UiAction({
+export const pmRejectUiAction = UiAction({
   $id: Now.ID["pm-reject-submission"],
   table: "x_711398_se_submission",
   name: "Reject",
@@ -174,7 +174,7 @@ const COE_GATE_CONDITION = `current.getValue('state') == 'reviewed' &&
 current.getValue('assigned_to') != gs.getUserID() &&
 gs.getUser().isMemberOf('${SKILL_EVALUATION_COE_GROUP_NAME}')`;
 
-UiAction({
+export const coeApproveUiAction = UiAction({
   $id: Now.ID["coe-approve-submission"],
   table: "x_711398_se_submission",
   name: "Approve",
@@ -192,7 +192,7 @@ UiAction({
   script: approveAtCoeGate,
 });
 
-UiAction({
+export const coeRejectUiAction = UiAction({
   $id: Now.ID["coe-reject-submission"],
   table: "x_711398_se_submission",
   name: "Reject",

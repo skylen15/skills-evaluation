@@ -51,7 +51,7 @@ export const testSubmissionSubmitForReview = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/submit-for-review.ts");
           var grSeedSub = new GlideRecord(SUBMISSION_TABLE);
           grSeedSub.addQuery("assigned_to", gs.getUserID());
           grSeedSub.setLimit(1);
@@ -115,7 +115,7 @@ export const testSubmissionSubmitForReview = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/submit-for-review.ts");
           var grMember = new GlideRecord("sys_user");
           grMember.addQuery("first_name", "ATF");
           grMember.addQuery("last_name", "Submit Member");
@@ -160,7 +160,7 @@ export const testSubmissionSubmitForReview = Test(
       script: `
         (function(outputs, steps, params, stepResult, assertEqual) {
           var SUBMISSION_TABLE = "x_711398_se_submission";
-          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submit-for-review.ts");
+          var submitModule = require("x_711398_se/skill-evaluation/0.0.1/src/server/submission/submit-for-review.ts");
           var grSub = new GlideRecord(SUBMISSION_TABLE);
           grSub.addQuery("assigned_to", gs.getUserID());
           grSub.setLimit(1);

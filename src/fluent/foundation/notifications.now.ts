@@ -29,6 +29,7 @@ export const notificationSubmissionCreated = EmailNotification({
   },
   recipientDetails: {
     recipientFields: ["assigned_to"],
+    sendToCreator: true,
   },
   emailContent: {
     subject: "Skill Evaluation ${number} created",
@@ -51,6 +52,7 @@ export const notificationSubmissionSubmitted = EmailNotification({
   },
   recipientDetails: {
     recipientGroups: [skillEvaluationPm],
+    sendToCreator: true,
   },
   emailContent: {
     subject: "Skill Evaluation ${number} submitted for PM review",
@@ -73,6 +75,7 @@ export const notificationSubmissionPmApproved = EmailNotification({
   },
   recipientDetails: {
     recipientGroups: [skillEvaluationCoe],
+    sendToCreator: true,
   },
   emailContent: {
     subject: "Skill Evaluation ${number} reviewed by PM and awaiting CoE review",
@@ -95,6 +98,7 @@ export const notificationSubmissionPmRejected = EmailNotification({
   },
   recipientDetails: {
     recipientFields: ["assigned_to"],
+    sendToCreator: true,
   },
   emailContent: {
     subject: "Skill Evaluation ${number} rejected by PM",
@@ -117,6 +121,7 @@ export const notificationSubmissionCoeRejected = EmailNotification({
   },
   recipientDetails: {
     recipientFields: ["assigned_to"],
+    sendToCreator: true,
   },
   emailContent: {
     subject: "Skill Evaluation ${number} rejected by CoE Head",

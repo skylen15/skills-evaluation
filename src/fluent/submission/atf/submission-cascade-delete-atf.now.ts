@@ -50,7 +50,7 @@ export const testSubmissionCascadeDelete = Test(
           var CERT_TABLE = "x_711398_se_certificate";
 
           var grCert = new GlideRecord(CERT_TABLE);
-          grCert.addQuery("name", "Servicenow System Administrator Certification (CSA)");
+          grCert.addQuery("name", "ServiceNow Certified System Administrator");
           grCert.setLimit(1);
           grCert.query();
           var certId = grCert.next() ? grCert.getUniqueValue() : "";

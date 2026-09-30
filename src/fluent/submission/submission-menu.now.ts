@@ -11,7 +11,7 @@ export const skillEvaluationMenu = ApplicationMenu({
   active: true,
 });
 
-Record({
+export const moduleNewEvaluation = Record({
   $id: Now.ID["module-new-evaluation"],
   table: "sys_app_module",
   data: {
@@ -26,7 +26,7 @@ Record({
   },
 });
 
-Record({
+export const moduleMySkillEvaluations = Record({
   $id: Now.ID["module-my-skill-evaluations"],
   table: "sys_app_module",
   data: {
@@ -42,7 +42,7 @@ Record({
   },
 });
 
-Record({
+export const moduleAllSubmissions = Record({
   $id: Now.ID["module-all-submissions"],
   table: "sys_app_module",
   data: {
@@ -57,7 +57,7 @@ Record({
   },
 });
 
-Record({
+export const moduleAwaitingApproval = Record({
   $id: Now.ID["module-awaiting-approval"],
   table: "sys_app_module",
   data: {
@@ -73,7 +73,7 @@ Record({
   },
 });
 
-Record({
+export const moduleCompletedSubmissions = Record({
   $id: Now.ID["module-completed-submissions"],
   table: "sys_app_module",
   data: {
