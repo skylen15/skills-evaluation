@@ -6,9 +6,7 @@ import { testSubmissionCompletedImmutability } from "./submission-completed-lock
 import { testSubmissionEmailNotifications } from "./submission-email-notifications-atf.now.ts";
 import { testSubmissionGates } from "./submission-gates-atf.now.ts";
 import { testSubmissionInsertAndInProgress } from "./submission-insert-atf.now.ts";
-import { testMemberSubmissionJourney } from "./submission-member-journey-atf.now.ts";
 import { testSubmissionMemberQueryIsolation } from "./submission-query-isolation-atf.now.ts";
-import { testReviewerAdminJourneys } from "./submission-reviewer-journeys-atf.now.ts";
 import { testSubmissionScore } from "./submission-score-atf.now.ts";
 import { testSubmissionSubmitForReview } from "./submission-submit-atf.now.ts";
 
@@ -27,8 +25,6 @@ export const skillEvaluationTestSuite = TestSuite({
     testSubmissionCompletedImmutability,
     testSubmissionMemberQueryIsolation,
     testSubmissionCascadeDelete,
-    testMemberSubmissionJourney,
-    testReviewerAdminJourneys,
     testSubmissionEmailNotifications,
   ],
 });

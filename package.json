@@ -17,6 +17,8 @@
     "fmt:check": "oxfmt --check",
     "test": "node --test test/**/*.test.ts",
     "test:atf": "now-sdk cicd testsuite run -a pdi-kl-o2 --test-suite-name \"Skill Evaluation\"",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "typecheck": "tsc --noEmit -p src/server/tsconfig.json",
     "ci:build": "now-sdk build --frozenKeys",
     "ci:install": "now-sdk install",
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@oxlint/plugins": "1.83.0",
+    "@playwright/test": "1.61.1",
     "@servicenow/glide": "27.0.5",
     "@servicenow/sdk": "4.12.2",
     "oxfmt": "0.68.0",
