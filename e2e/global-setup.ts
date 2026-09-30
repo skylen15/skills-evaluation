@@ -4,7 +4,10 @@ import path from "node:path";
 import { chromium, type FullConfig } from "@playwright/test";
 
 import { AUTH_DIR, AUTH_FILES, INSTANCE_URL } from "../playwright.config.ts";
-import { normalizeInstanceUrl } from "./fixtures/cleanup.ts";
+import { PERSONA_KEYS, PERSONA_MANIFEST, type PersonaKey } from "./fixtures/personas.ts";
+import { runPreflightChecks } from "./preflight.ts";
+import { probeInstanceAvailability } from "./utils/probe-client.ts";
+import { normalizeInstanceUrl } from "./utils/url-helper.ts";
 
 declare global {
   interface Window {
@@ -26,98 +29,85 @@ interface GroupRecord {
   sys_id: string;
 }
 
-type PersonaKey = "member" | "pm" | "coe";
+interface PersonaSysIdCache {
+  instanceUrl: string;
+  personas: Record<PersonaKey, string>;
+}
 
-const PERSONA_CONFIG: Record<PersonaKey, { userName: string; groupName: string; label: string }> = {
-  member: {
-    userName: "se_member_test",
-    groupName: "Skill Evaluation User",
-    label: "Member",
-  },
-  pm: {
-    userName: "se_pm_test",
-    groupName: "Skill Evaluation PM",
-    label: "PM",
-  },
-  coe: {
-    userName: "se_coe_test",
-    groupName: "Skill Evaluation COE",
-    label: "CoE Head",
-  },
-};
+const CACHE_FILE = path.resolve(AUTH_DIR, "persona-sysids.json");
 
-const PERSONA_KEYS: PersonaKey[] = ["member", "pm", "coe"];
-
-/** Pre-flight warm-up probe & hibernation guard with 60s timeout */
-async function checkHibernationAndWarmUp(instanceUrl: string, authHeader?: string): Promise<void> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
-
+/**
+ * Reads cached persona sys_ids if matching instanceUrl.
+ * Reduces repeated immutable setup work safely without caching business data.
+ */
+function readPersonaCache(instanceUrl: string): Record<PersonaKey, string> | null {
   try {
-    const headers: HeadersInit = authHeader
-      ? { Accept: "application/json", Authorization: authHeader }
-      : { Accept: "application/json" };
+    if (fs.existsSync(CACHE_FILE)) {
+      const data: unknown = JSON.parse(fs.readFileSync(CACHE_FILE, "utf-8"));
+      if (data && typeof data === "object" && "instanceUrl" in data && "personas" in data) {
+        const record = data as PersonaSysIdCache;
+        if (record.instanceUrl === instanceUrl) {
+          const p = record.personas;
+          if (p.member && p.pm && p.coe) {
+            return p;
+          }
+        }
+      }
+    }
+  } catch {
+    // Cache miss or read error; safely re-query
+  }
+  return null;
+}
 
-    const res = await fetch(`${instanceUrl}/api/now/table/sys_user?sysparm_limit=1`, {
-      signal: controller.signal,
-      headers,
-    });
+/**
+ * Persists immutable persona sys_ids to disk cache.
+ */
+function writePersonaCache(instanceUrl: string, personas: Record<PersonaKey, string>): void {
+  try {
+    const data: PersonaSysIdCache = { instanceUrl, personas };
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch {
+    // Non-fatal if writing cache fails
+  }
+}
 
-    clearTimeout(timeoutId);
+/** Pre-flight warm-up probe & hibernation guard with classified retry */
+async function checkHibernationAndWarmUp(instanceUrl: string): Promise<void> {
+  const result = await probeInstanceAvailability(instanceUrl);
 
-    const bodyText = await res.text();
-
-    const isHibernating =
-      bodyText.toLowerCase().includes("hibernat") ||
-      bodyText.toLowerCase().includes("instance is hibernating") ||
-      res.url.includes("signon.service-now.com") ||
-      res.url.includes("/wakeup");
-
-    if (isHibernating) {
+  if (!result.ok) {
+    if (result.error?.classification === "AVAILABILITY") {
       throw new Error(
-        `[ServiceNow E2E] Instance at ${instanceUrl} is currently hibernating. Please wake up the instance at https://developer.servicenow.com before running E2E acceptance tests.`,
+        `[ServiceNow E2E] Instance pre-flight warm-up failed at ${instanceUrl} (${result.error.message}). The instance may be hibernating or unresponsive. Please verify at https://developer.servicenow.com.`,
       );
     }
-  } catch (err: unknown) {
-    clearTimeout(timeoutId);
-
-    if (err instanceof Error) {
-      if (err.name === "AbortError") {
-        throw new Error(
-          `[ServiceNow E2E] Instance pre-flight warm-up timed out after 60s at ${instanceUrl}. The instance may be hibernating or unresponsive.`,
-        );
-      }
-
-      if (err.message.includes("[ServiceNow E2E]")) {
-        throw err;
-      }
-
-      console.warn(`[ServiceNow E2E] Pre-flight probe notice: ${err.message}`);
-    }
+    console.warn(`[ServiceNow E2E] Pre-flight probe notice: ${result.error?.message}`);
   }
 }
 
 /** Ensure test users exist on instance and retrieve their sys_ids */
 async function resolvePersonaSysIds(
   instanceUrl: string,
-  authHeader?: string,
   sessionHeaders: Record<string, string> = {},
 ): Promise<Record<PersonaKey, string>> {
+  // Check immutable sys_id cache first
+  const cached = readPersonaCache(instanceUrl);
+  if (cached) {
+    console.log("[ServiceNow E2E] Reusing cached persona sys_ids from prior preflight.");
+    return cached;
+  }
+
   const result: Record<PersonaKey, string> = {
     member: "",
     pm: "",
     coe: "",
   };
 
-  const userNames = Object.values(PERSONA_CONFIG).map((p) => p.userName);
+  const userNames = Object.values(PERSONA_MANIFEST).map((p) => p.userName);
   const queryUrl = `${instanceUrl}/api/now/table/sys_user?sysparm_query=user_nameIN${userNames.join(",")}&sysparm_fields=sys_id,user_name`;
 
   const apiHeaders = { ...sessionHeaders };
-
-  if (authHeader) {
-    apiHeaders.Authorization = authHeader;
-  }
-
   try {
     const res = await fetch(queryUrl, {
       headers: {
@@ -127,14 +117,11 @@ async function resolvePersonaSysIds(
     });
 
     if (res.ok) {
-      // SAFETY: ServiceNow Table API returns an object wrapping a result array for queries.
       const data = (await res.json()) as TableApiResponse<UserRecord[]>;
-
       if (Array.isArray(data.result)) {
         for (const user of data.result) {
           for (const personaKey of PERSONA_KEYS) {
-            const config = PERSONA_CONFIG[personaKey];
-
+            const config = PERSONA_MANIFEST[personaKey];
             if (user.user_name === config.userName) {
               result[personaKey] = user.sys_id;
             }
@@ -144,13 +131,12 @@ async function resolvePersonaSysIds(
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-
     console.warn(`[ServiceNow E2E] Failed to query existing persona users: ${message}`);
   }
 
   // For any persona, ensure user exists and has group membership on instance
   for (const personaKey of PERSONA_KEYS) {
-    const config = PERSONA_CONFIG[personaKey];
+    const config = PERSONA_MANIFEST[personaKey];
 
     if (!result[personaKey]) {
       try {
@@ -163,25 +149,22 @@ async function resolvePersonaSysIds(
           },
           body: JSON.stringify({
             user_name: config.userName,
-            first_name: "SE",
-            last_name: `${config.label} Test`,
-            email: `${config.userName}@example.com`,
+            first_name: config.firstName,
+            last_name: config.lastName,
+            email: config.email,
             active: true,
           }),
         });
 
         if (createRes.ok) {
-          // SAFETY: ServiceNow Table API returns an object wrapping the newly created record in result.
           const createData = (await createRes.json()) as TableApiResponse<UserRecord>;
           const userSysId = createData.result?.sys_id;
-
           if (userSysId) {
             result[personaKey] = userSysId;
           }
         }
       } catch (createErr: unknown) {
         const message = createErr instanceof Error ? createErr.message : String(createErr);
-
         console.warn(
           `[ServiceNow E2E] Could not auto-provision seed user ${config.userName}: ${message}`,
         );
@@ -204,7 +187,9 @@ async function resolvePersonaSysIds(
 
         let hasMembership = false;
         if (checkMemberRes.ok) {
-          const memberData = (await checkMemberRes.json()) as TableApiResponse<{ sys_id: string }[]>;
+          const memberData = (await checkMemberRes.json()) as TableApiResponse<
+            { sys_id: string }[]
+          >;
           if (Array.isArray(memberData.result) && memberData.result.length > 0) {
             hasMembership = true;
           }
@@ -256,6 +241,11 @@ async function resolvePersonaSysIds(
     }
   }
 
+  // If all personas resolved, write to immutable cache
+  if (result.member && result.pm && result.coe) {
+    writePersonaCache(instanceUrl, result);
+  }
+
   return result;
 }
 
@@ -291,15 +281,13 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
     fs.mkdirSync(AUTH_DIR, { recursive: true });
   }
 
-  const basicAuth = `Basic ${Buffer.from(`${adminUser}:${adminPassword}`).toString("base64")}`;
-
   const cleanUrl = normalizeInstanceUrl(INSTANCE_URL);
 
-  // 1. Pre-flight cache warm-up and hibernation guard
+  // 1. Pre-flight cache warm-up and hibernation guard with classified retry
   console.log(`[ServiceNow E2E] Running pre-flight warm-up against ${cleanUrl}...`);
-  await checkHibernationAndWarmUp(cleanUrl, basicAuth);
+  await checkHibernationAndWarmUp(cleanUrl);
 
-  // 3. Admin login once to acquire browser session and CSRF token
+  // 2. Admin login once to acquire browser session and CSRF token
   console.log(`[ServiceNow E2E] Logging in as Admin (${adminUser}) to capture CSRF token...`);
   const browser = await chromium.launch({ headless: true });
   const adminContext = await browser.newContext({ baseURL: cleanUrl });
@@ -308,7 +296,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   try {
     await adminPage.goto(`${cleanUrl}/login.do`, {
       waitUntil: "domcontentloaded",
-      timeout: 45000,
+      timeout: 90000,
     });
 
     const userInput = adminPage.locator("#user_name");
@@ -321,16 +309,19 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
       const adminContinue = adminPage.locator(
         '#sysverb_login, button:has-text("Continue"), input[value="Continue"], button:has-text("Yes")',
       );
-      if (adminPage.url().includes("login.do") && (await adminContinue.isVisible().catch(() => false))) {
+      if (
+        adminPage.url().includes("login.do") &&
+        (await adminContinue.isVisible().catch(() => false))
+      ) {
         await adminContinue.click();
       }
       await adminPage
-        .waitForURL((url) => !url.href.includes("login.do"), { timeout: 20000 })
+        .waitForURL((url) => !url.href.includes("login.do"), { timeout: 45000 })
         .catch(() => {});
     }
 
-    // Navigate to classic navpage to ensure window.g_ck is populated
-    await adminPage.goto(`${cleanUrl}/navpage.do`, {
+    // Navigate to classic list page to ensure window.g_ck is populated
+    await adminPage.goto(`${cleanUrl}/sys_user_list.do`, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
@@ -346,8 +337,6 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
           undefined,
           { timeout: 15000 },
         );
-
-        // SAFETY: waitForFunction returns the string token when resolved.
         g_ck = (await handle.jsonValue()) as string;
       } catch {
         console.warn("[ServiceNow E2E] window.g_ck could not be read within timeout");
@@ -363,9 +352,6 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
     // Save admin storage state
     await adminContext.storageState({ path: AUTH_FILES.admin });
 
-    // Resolve seed users through the authenticated browser session. Some instances
-    // reject Basic Auth for Table API requests even when the same credentials work
-    // for the browser login.
     const sessionHeaders = {
       Cookie: (await adminContext.cookies())
         .map(({ name, value }) => `${name}=${value}`)
@@ -376,9 +362,15 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
     const adminSessionFile = path.resolve(AUTH_DIR, "admin-session.json");
     fs.writeFileSync(adminSessionFile, JSON.stringify(sessionHeaders, null, 2), "utf-8");
 
+    // 3. Run read-only preflight verification for personas, access prerequisites, and navigator reachability
+    console.log("[ServiceNow E2E] Running read-only preflight verification...");
+    await runPreflightChecks(cleanUrl, {
+      sessionHeaders,
+    });
+
     console.log("[ServiceNow E2E] Resolving seed test user identifiers...");
 
-    const personaSysIds = await resolvePersonaSysIds(cleanUrl, undefined, sessionHeaders);
+    const personaSysIds = await resolvePersonaSysIds(cleanUrl, sessionHeaders);
     console.log(
       `[ServiceNow E2E] Admin session established (CSRF token: ${g_ck ? "acquired" : "fallback"}).`,
     );
@@ -399,19 +391,22 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
             });
           }
           if (records.length > 0) {
-            console.log(`[ServiceNow E2E] Cleaned up ${records.length} stale submission(s) from prior runs.`);
+            console.log(
+              `[ServiceNow E2E] Cleaned up ${records.length} stale submission(s) from prior runs.`,
+            );
           }
         }
       }
     } catch (cleanupErr) {
       console.warn("[ServiceNow E2E] Non-fatal error cleaning up stale submissions:", cleanupErr);
     }
+
     // Close admin context so it does not conflict with persona logins
     await adminContext.close().catch(() => {});
 
     // 4. Impersonate each persona and export isolated storage states
     for (const personaKey of PERSONA_KEYS) {
-      const config = PERSONA_CONFIG[personaKey];
+      const config = PERSONA_MANIFEST[personaKey];
       const userSysId = personaSysIds[personaKey];
 
       if (!userSysId) {
@@ -433,7 +428,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
 
       await personaPage.goto(`${cleanUrl}/login.do`, {
         waitUntil: "domcontentloaded",
-        timeout: 45000,
+        timeout: 90000,
       });
 
       const userInput = personaPage.locator("#user_name");
@@ -441,20 +436,23 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
       if (await userInput.isVisible({ timeout: 5000 }).catch(() => false)) {
         await userInput.fill(adminUser);
         await personaPage.locator("#user_password").fill(adminPassword);
-      await personaPage.locator("#sysverb_login").click();
-      await personaPage.waitForTimeout(1500);
-      const personaContinue = personaPage.locator(
-        '#sysverb_login, button:has-text("Continue"), input[value="Continue"], button:has-text("Yes")',
-      );
-      if (personaPage.url().includes("login.do") && (await personaContinue.isVisible().catch(() => false))) {
-        await personaContinue.click();
+        await personaPage.locator("#sysverb_login").click();
+        await personaPage.waitForTimeout(1500);
+        const personaContinue = personaPage.locator(
+          '#sysverb_login, button:has-text("Continue"), input[value="Continue"], button:has-text("Yes")',
+        );
+        if (
+          personaPage.url().includes("login.do") &&
+          (await personaContinue.isVisible().catch(() => false))
+        ) {
+          await personaContinue.click();
+        }
+        await personaPage
+          .waitForURL((url) => !url.href.includes("login.do"), { timeout: 45000 })
+          .catch(() => {});
       }
-      await personaPage
-        .waitForURL((url) => !url.href.includes("login.do"), { timeout: 20000 })
-        .catch(() => {});
-    }
 
-      await personaPage.goto(`${cleanUrl}/navpage.do`, {
+      await personaPage.goto(`${cleanUrl}/sys_user_list.do`, {
         waitUntil: "domcontentloaded",
         timeout: 60000,
       });
@@ -518,7 +516,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
 
       // Refresh to lock session cookies to impersonated user
       try {
-        await personaPage.goto(`${cleanUrl}/navpage.do`, {
+        await personaPage.goto(`${cleanUrl}/sys_user_list.do`, {
           waitUntil: "domcontentloaded",
           timeout: 15000,
         });

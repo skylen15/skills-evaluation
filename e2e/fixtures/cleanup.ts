@@ -4,10 +4,9 @@ import path from "node:path";
 import { test as base, expect } from "@playwright/test";
 
 import { AUTH_DIR, INSTANCE_URL } from "../../playwright.config.ts";
+import { normalizeInstanceUrl } from "../utils/url-helper.ts";
 
-export function normalizeInstanceUrl(url: string): string {
-  return url.replace(/\/now\/nav\/ui\/classic\/params\/target\/?.*$/i, "").replace(/\/+$/, "");
-}
+export { normalizeInstanceUrl };
 
 export const API_BASE_URL = normalizeInstanceUrl(INSTANCE_URL);
 
